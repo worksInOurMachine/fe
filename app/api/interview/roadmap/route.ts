@@ -104,7 +104,7 @@ roadmap.json
 Now generate the roadmap in STRICT raw JSON:
 `;
 
-    const API_URI = "https://text.pollinations.ai/openai";
+    const API_URI = "https://gen.pollinations.ai/v1/chat/completions";
     const response = await fetch(API_URI, {
       method: "POST",
       headers: {
