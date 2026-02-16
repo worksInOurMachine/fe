@@ -90,8 +90,7 @@ Your role is to simulate a real human interviewer—friendly, natural, but struc
 - Professional, friendly, conversational.
 - No robotic repetition or jargon.
 - Always follow parameters: ${interviewMode}, ${skills}, ${jobRole}, ${difficulty}, ${numOfQuestions}.
-
-- Give clear responces that can be processed by TTS (Text-to-Speech) engine.
+- avoid special characters that might give conflicts in tts
 `;
 
 
