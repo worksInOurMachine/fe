@@ -6,371 +6,301 @@ import {
   PolarGrid,
   PolarAngleAxis,
   PolarRadiusAxis,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
   Tooltip,
-  Legend,
 } from "recharts";
 import { motion } from "framer-motion";
+import { User, ClipboardCheck, Brain, Smile, Activity, ShieldCheck, Zap, ArrowUpRight, TrendingUp } from "lucide-react";
 
-// Example `report` prop will be used if none is provided. Pass your parsed JSON as `report` prop.
 export default function InterviewReport({ report }: { report?: any }) {
+  if (!report) return (
+    <div className="flex items-center justify-center p-20 text-slate-500 italic">
+      No report data available to display.
+    </div>
+  );
+
   const data = report;
 
+  // Safe access to scores
+  const scores = data.scores || {};
+  
   const scoreBars = [
-    { name: "Technical", value: data.scores.technicalKnowledge },
-    { name: "Communication", value: data.scores.communication },
-    { name: "Problem Solving", value: data.scores.problemSolving },
-    { name: "Confidence", value: data.scores.confidenceLevel },
-    { name: "Engagement", value: data.scores.engagement },
-    { name: "Composure", value: data.scores.composure },
+    { name: "Technical", value: scores.technicalKnowledge || 0, color: "blue" },
+    { name: "Communication", value: scores.communication || 0, color: "emerald" },
+    { name: "Problem Solving", value: scores.problemSolving || 0, color: "amber" },
+    { name: "Confidence", value: scores.confidenceLevel || 0, color: "indigo" },
+    { name: "Engagement", value: scores.engagement || 0, color: "rose" },
+    { name: "Composure", value: scores.composure || 0, color: "purple" },
   ];
 
   const radarData = [
-    { subject: "Technical", A: data.scores.technicalKnowledge, fullMark: 10 },
-    { subject: "Communication", A: data.scores.communication, fullMark: 10 },
-    { subject: "Problem Solving", A: data.scores.problemSolving, fullMark: 10 },
-    { subject: "Confidence", A: data.scores.confidenceLevel, fullMark: 10 },
-    { subject: "Engagement", A: data.scores.engagement, fullMark: 10 },
-    { subject: "Composure", A: data.scores.composure, fullMark: 10 },
+    { subject: "Technical", A: scores.technicalKnowledge || 0, fullMark: 10 },
+    { subject: "Communication", A: scores.communication || 0, fullMark: 10 },
+    { subject: "Problem Solving", A: scores.problemSolving || 0, fullMark: 10 },
+    { subject: "Confidence", A: scores.confidenceLevel || 0, fullMark: 10 },
+    { subject: "Engagement", A: scores.engagement || 0, fullMark: 10 },
+    { subject: "Composure", A: scores.composure || 0, fullMark: 10 },
   ];
 
   const formatName = (s: any) =>
-    s.replace(/(^|\s)\S/g, (t: any) => t.toUpperCase());
+    s ? String(s).replace(/(^|\s)\S/g, (t: any) => t.toUpperCase()) : "N/A";
+
+  const candidateInfo = data.candidateInformation || {};
+  const answerAnalysis = data.answerAnalysis || { strengths: [], weaknesses: [], insights: [] };
+  const overallPerformance = data.overallPerformance || {};
+  const summaryAndNextSteps = data.summaryAndNextSteps || { rationale: [], actionableNextSteps: [] };
+  const facialAnalytics = data.facialAnalytics || {};
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0 }
+  };
+
+  const skillsList = typeof candidateInfo.skillsAssessed === 'string' 
+    ? candidateInfo.skillsAssessed.split(',').filter(Boolean).map((s: string) => s.trim())
+    : [];
 
   return (
-    // Main container with dark theme
-    <div className="min-h-screen bg-slate-900 p-6 text-slate-200 sm:p-10">
-      <div className="max-w-full mx-auto">
-        <motion.header
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
-        >
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-              Interview Report
-            </h1>
-            <p className="text-sm text-slate-400 mt-1">
-              Candidate:{" "}
-              <span className="font-medium text-slate-200">
-                {formatName(data.candidateInformation.candidateName)}
-              </span>
-              {" • "}
-              Role:{" "}
-              <span className="font-medium text-slate-200">
-                {formatName(data.candidateInformation.jobRole)}
-              </span>
-            </p>
-          </div>
-
-          <div className="flex gap-3 items-center">
-            <div className="text-right">
-              <p className="text-xs text-slate-400">Mode</p>
-              <p className="font-medium">
-                {formatName(data.candidateInformation.mode)}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-slate-400">Difficulty</p>
-              <p className="font-medium">
-                {formatName(data.candidateInformation.difficulty)}
-              </p>
-            </div>
-            {/* Dark mode card for stats */}
-            <div className="hidden sm:block bg-slate-800 border border-slate-700 rounded-lg p-3">
-              <p className="text-xs text-slate-400">Questions</p>
-              <p className="font-medium">
-                {data.candidateInformation.numOfQuestions}
-              </p>
-            </div>
-          </div>
-        </motion.header>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left column */}
-          <motion.aside
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-1 space-y-6"
-          >
-            {/* Dark mode card */}
-            <div className="bg-slate-800 rounded-xl border border-slate-700 p-5">
-              <h3 className="text-sm text-slate-400">Candidate Info</h3>
-              <div className="mt-3 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Name</span>
-                  <span className="font-medium text-slate-200">
-                    {formatName(data.candidateInformation.candidateName)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Role</span>
-                  <span className="font-medium text-slate-200">
-                    {formatName(data.candidateInformation.jobRole)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Skills</span>
-                  <span className="font-medium text-slate-200">
-                    {data.candidateInformation.skillsAssessed}
-                  </span>
-                </div>
+    <div className="bg-[#020617] p-8 md:p-12 text-slate-200">
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="max-w-7xl mx-auto"
+      >
+        {/* Top Overview Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {/* Candidate Card */}
+          <motion.div variants={itemVariants} className="glass-card p-6 rounded-[2rem] border-white/5 bg-white/[0.02]">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 rounded-2xl bg-blue-500/10 text-blue-400">
+                <User className="h-5 w-5" />
               </div>
+              <span className="text-xs font-black uppercase tracking-widest text-slate-500">Candidate</span>
             </div>
+            <h3 className="text-xl font-bold text-white mb-1">{formatName(candidateInfo.candidateName)}</h3>
+            <p className="text-sm text-slate-400 font-medium">{formatName(candidateInfo.jobRole)}</p>
+          </motion.div>
 
-            {/* Dark mode card */}
-            <div className="bg-slate-800 rounded-xl border border-slate-700 p-5">
-              <h3 className="text-sm text-slate-400">Facial Analytics</h3>
-              <p className="mt-2 text-sm text-slate-300">
-                {data.facialAnalytics.emotionSummary}
-              </p>
-              <p className="mt-3 text-xs text-slate-400">Notes</p>
-              <p className="text-sm text-slate-300 mt-1">
-                {data.facialAnalytics.notes}
-              </p>
-
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                <div className="text-center p-2 bg-slate-700/50 rounded-lg">
-                  <p className="text-xs text-slate-400">Confidence</p>
-                  <p className="font-semibold text-slate-100">
-                    {data.scores.confidenceLevel}/10
-                  </p>
-                </div>
-                <div className="text-center p-2 bg-slate-700/50 rounded-lg">
-                  <p className="text-xs text-slate-400">Engagement</p>
-                  <p className="font-semibold text-slate-100">
-                    {data.scores.engagement}/10
-                  </p>
-                </div>
-                <div className="text-center p-2 bg-slate-700/50 rounded-lg">
-                  <p className="text-xs text-slate-400">Composure</p>
-                  <p className="font-semibold text-slate-100">
-                    {data.scores.composure}/10
-                  </p>
-                </div>
+          {/* Performance Card */}
+          <motion.div variants={itemVariants} className="glass-card p-6 rounded-[2rem] border-white/5 bg-white/[0.02]">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-400">
+                <TrendingUp className="h-5 w-5" />
               </div>
+              <span className="text-xs font-black uppercase tracking-widest text-slate-500">Decision</span>
             </div>
+            <h3 className={`text-xl font-bold mb-1 ${overallPerformance.hiringRecommendation === 'Yes' ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {overallPerformance.hiringRecommendation === 'Yes' ? 'Recommended' : overallPerformance.hiringRecommendation === 'Maybe' ? 'Needs Review' : 'Rejected'}
+            </h3>
+            <p className="text-sm text-slate-400 font-medium line-clamp-1">{overallPerformance.justification || 'No justification provided.'}</p>
+          </motion.div>
 
-            {/* Dark mode card */}
-            <div className="bg-slate-800 rounded-xl border border-slate-700 p-5">
-              <h3 className="text-sm text-slate-400">Quick Recommendation</h3>
-              <div className="mt-3">
-                <p className="text-lg font-semibold text-white">
-                  {data.overallPerformance.hiringRecommendation}
+          {/* Skills Card */}
+          <motion.div variants={itemVariants} className="glass-card p-6 rounded-[2rem] border-white/5 bg-white/[0.02]">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 rounded-2xl bg-purple-500/10 text-purple-400">
+                <Zap className="h-5 w-5" />
+              </div>
+              <span className="text-xs font-black uppercase tracking-widest text-slate-500">Core Skills</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {skillsList.length > 0 ? skillsList.slice(0, 3).map((skill: string) => (
+                <span key={skill} className="px-2 py-1 rounded-md bg-white/5 border border-white/5 text-[10px] font-bold text-slate-400">{skill}</span>
+              )) : <span className="text-slate-500 text-xs">N/A</span>}
+            </div>
+          </motion.div>
+
+          {/* Session Detail */}
+          <motion.div variants={itemVariants} className="glass-card p-6 rounded-[2rem] border-white/5 bg-white/[0.02]">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400">
+                <Activity className="h-5 w-5" />
+              </div>
+              <span className="text-xs font-black uppercase tracking-widest text-slate-500">Session</span>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-1">{candidateInfo.numOfQuestions || 0} Questions</h3>
+            <p className="text-sm text-slate-400 font-medium capitalize">{candidateInfo.difficulty || 'Normal'} Difficulty</p>
+          </motion.div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Analysis Column */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Answer Analysis */}
+            <motion.section variants={itemVariants} className="glass-card rounded-[2.5rem] border-white/5 p-8 md:p-10 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[80px] rounded-full" />
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-8">
+                  <ClipboardCheck className="h-6 w-6 text-blue-400" />
+                  <h2 className="text-2xl font-black text-white tracking-tight">Answer Analysis</h2>
+                </div>
+                
+                <p className="text-slate-400 text-lg leading-relaxed mb-10 italic border-l-2 border-blue-500/30 pl-6">
+                  "{answerAnalysis.candidateAnswersSummary || 'No summary available.'}"
                 </p>
-                <p className="mt-2 text-xs text-slate-400">
-                  {data.overallPerformance.justification}
-                </p>
-              </div>
-            </div>
-          </motion.aside>
 
-          {/* Middle column */}
-          <motion.section
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="lg:col-span-2"
-          >
-            {/* Dark mode card */}
-            <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
-              <h3 className="text-lg font-semibold text-white">
-                Answer Analysis
-              </h3>
-              <p className="mt-3 text-sm text-slate-300">
-                {data.answerAnalysis.candidateAnswersSummary}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="p-6 rounded-3xl bg-emerald-500/5 border border-emerald-500/10">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-emerald-400 mb-4 flex items-center gap-2">
+                       <ShieldCheck className="h-4 w-4" /> Performance Strengths
+                    </h3>
+                    <ul className="space-y-3">
+                      {(answerAnalysis.strengths || []).length > 0 ? answerAnalysis.strengths.map((s: string, idx: number) => (
+                        <li key={idx} className="text-slate-300 text-sm flex gap-3">
+                          <span className="text-emerald-500 font-bold">•</span> {s}
+                        </li>
+                      )) : <p className="text-slate-500 text-sm italic">None identified.</p>}
+                    </ul>
+                  </div>
+
+                  <div className="p-6 rounded-3xl bg-rose-500/5 border border-rose-500/10">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-rose-400 mb-4 flex items-center gap-2">
+                      <Zap className="h-4 w-4" /> Improvement Areas
+                    </h3>
+                    <ul className="space-y-3">
+                      {(answerAnalysis.weaknesses || []).length > 0 ? answerAnalysis.weaknesses.map((w: string, idx: number) => (
+                        <li key={idx} className="text-slate-300 text-sm flex gap-3">
+                          <span className="text-rose-500 font-bold">•</span> {w}
+                        </li>
+                      )) : <p className="text-slate-500 text-sm italic">None identified.</p>}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 pt-10 border-t border-white/5">
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Communication</h4>
+                    <p className="text-slate-300 text-sm leading-relaxed">{answerAnalysis.communicationStyle || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Problem Solving</h4>
+                    <p className="text-slate-300 text-sm leading-relaxed">{answerAnalysis.problemSolvingApproach || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Internal Insights</h4>
+                    <ul className="text-slate-300 text-sm space-y-1">
+                      {(answerAnalysis.insights || []).length > 0 ? answerAnalysis.insights.map((ins: string, idx: number) => (
+                        <li key={idx} className="flex gap-2"><span className="text-blue-500 opacity-50">•</span> {ins}</li>
+                      )) : <p className="text-slate-500 text-xs italic">No specific insights.</p>}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </motion.section>
+
+            {/* Final Summary Card */}
+            <motion.section variants={itemVariants} className="glass-card rounded-[2.5rem] border-white/5 p-8 md:p-10 bg-gradient-to-br from-blue-600/10 to-transparent">
+              <div className="flex items-center gap-3 mb-6">
+                <Brain className="h-6 w-6 text-purple-400" />
+                <h2 className="text-2xl font-black text-white tracking-tight">AI Summary & Rationale</h2>
+              </div>
+              <p className="text-lg text-slate-300 leading-relaxed mb-8">
+                {summaryAndNextSteps.finalSummary || 'No final summary generated.'}
               </p>
-
-              <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <h4 className="text-sm font-medium text-slate-200">
-                    Strengths
-                  </h4>
-                  {data.answerAnalysis.strengths.length ? (
-                    <ul className="list-disc list-inside text-sm text-slate-300 mt-2 space-y-1">
-                      {data.answerAnalysis.strengths.map((s, idx) => (
-                        <li key={idx}>{s}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-slate-400 mt-2">None detected</p>
-                  )}
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-medium text-slate-200">
-                    Weaknesses
-                  </h4>
-                  {data.answerAnalysis.weaknesses.length ? (
-                    <ul className="list-disc list-inside text-sm text-slate-300 mt-2 space-y-1">
-                      {data.answerAnalysis.weaknesses.map((w, idx) => (
-                        <li key={idx}>{w}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-slate-400 mt-2">None detected</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <h5 className="text-xs text-slate-400">
-                    Communication Style
-                  </h5>
-                  <p className="mt-1 text-sm text-slate-300">
-                    {data.answerAnalysis.communicationStyle}
-                  </p>
+                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-4">The Logic</h4>
+                  <ul className="space-y-3">
+                    {(summaryAndNextSteps.rationale || []).length > 0 ? summaryAndNextSteps.rationale.map((r: string, idx: number) => (
+                      <li key={idx} className="text-sm text-slate-400 flex gap-3">
+                        <ArrowUpRight className="h-4 w-4 text-blue-500 flex-shrink-0" /> {r}
+                      </li>
+                    )) : <p className="text-slate-500 text-sm italic">Rationale not specified.</p>}
+                  </ul>
                 </div>
                 <div>
-                  <h5 className="text-xs text-slate-400">Problem Solving</h5>
-                  <p className="mt-1 text-sm text-slate-300">
-                    {data.answerAnalysis.problemSolvingApproach}
-                  </p>
-                </div>
-                <div>
-                  <h5 className="text-xs text-slate-400">Insights</h5>
-                  <ul className="mt-1 text-sm text-slate-300 list-disc list-inside">
-                    {data.answerAnalysis.insights.map((i, idx) => (
-                      <li key={idx}>{i}</li>
-                    ))}
+                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-4">Action Pipeline</h4>
+                  <ul className="space-y-3">
+                    {(summaryAndNextSteps.actionableNextSteps || []).length > 0 ? summaryAndNextSteps.actionableNextSteps.map((a: string, idx: number) => (
+                      <li key={idx} className="p-3 rounded-xl bg-white/5 border border-white/5 text-sm text-white">
+                        {a}
+                      </li>
+                    )) : <p className="text-slate-500 text-sm italic">No next steps defined.</p>}
                   </ul>
                 </div>
               </div>
-            </div>
+            </motion.section>
+          </div>
 
-            <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Dark mode card */}
-              <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
-                <h3 className="text-lg font-semibold text-white">Scores</h3>
-                <p className="text-sm text-slate-400 mt-1">
-                  (All scores out of 10)
-                </p>
+          {/* Sidebar Area: Visual Metrics */}
+          <div className="space-y-8">
+            <motion.section variants={itemVariants} className="glass-card rounded-[2.5rem] border-white/5 p-8">
+              <h3 className="text-xl font-bold text-white mb-8 tracking-tight">Competency Radar</h3>
+              <div className="h-64 relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                    <PolarGrid stroke="#ffffff10" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} axisLine={false} />
+                    <Radar
+                      name="Score"
+                      dataKey="A"
+                      stroke="#3b82f6"
+                      fill="#3b82f6"
+                      fillOpacity={0.3}
+                    />
+                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#ffffff10', borderRadius: '12px' }} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </motion.section>
 
-                <div className="mt-4 space-y-3">
-                  {scoreBars.map((s) => (
-                    <div key={s.name} className="">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-300">{s.name}</span>
-                        <span className="font-semibold text-slate-100">
-                          {s.value}/10
-                        </span>
-                      </div>
-                      {/* Dark mode progress bar track */}
-                      <div className="w-full bg-slate-700 rounded-full h-2 mt-2">
-                        <div
-                          className="bg-gradient-to-r from-indigo-500 to-yellow-400 h-2 rounded-full"
-                          style={{ width: `${(s.value / 10) * 100}%` }}
-                        />
-                      </div>
+            <motion.section variants={itemVariants} className="glass-card rounded-[2.5rem] border-white/5 p-8">
+              <h3 className="text-xl font-bold text-white mb-6 tracking-tight">Metric Distribution</h3>
+              <div className="space-y-6">
+                {scoreBars.map((s) => (
+                  <div key={s.name}>
+                    <div className="flex justify-between text-xs font-black uppercase tracking-widest mb-2">
+                      <span className="text-slate-500">{s.name}</span>
+                      <span className="text-white">{s.value}/10</span>
                     </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 h-56">
-                  <ResponsiveContainer width="100%" height={200}>
-                    <RadarChart
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={70}
-                      data={radarData}
-                    >
-                      {/* Dark mode grid */}
-                      <PolarGrid stroke="#334155" /> {/* slate-700 */}
-                      {/* Dark mode axis text */}
-                      <PolarAngleAxis
-                        dataKey="subject"
-                        stroke="#475569" // slate-600
-                        tick={{ fill: "#94a3b8", fontSize: 12 }} // slate-400
+                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(s.value / 10) * 100}%` }}
+                        transition={{ duration: 1, delay: 0.5 }}
+                        className={`h-full bg-gradient-to-r ${
+                          s.color === 'blue' ? 'from-blue-600 to-blue-400' :
+                          s.color === 'emerald' ? 'from-emerald-600 to-emerald-400' :
+                          s.color === 'amber' ? 'from-amber-600 to-amber-400' :
+                          s.color === 'indigo' ? 'from-indigo-600 to-indigo-400' :
+                          s.color === 'rose' ? 'from-rose-600 to-rose-400' :
+                          'from-purple-600 to-purple-400'
+                        }`}
                       />
-                      <PolarRadiusAxis
-                        angle={30}
-                        domain={[0, 10]}
-                        stroke="#334155" // slate-700
-                        tick={{ fill: "#94a3b8" }} // slate-400
-                      />
-                      <Radar
-                        name="Candidate"
-                        dataKey="A"
-                        stroke="#6366F1" // indigo-500
-                        fill="#6366F1" // indigo-500
-                        fillOpacity={0.6}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Dark mode card */}
-              <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
-                <h3 className="text-lg font-semibold text-white">
-                  Final Summary & Next Steps
-                </h3>
-                <p className="mt-3 text-sm text-slate-300">
-                  {data.summaryAndNextSteps.finalSummary}
-                </p>
-
-                <h4 className="mt-4 text-sm font-medium text-slate-200">
-                  Rationale
-                </h4>
-                <ul className="list-disc list-inside text-sm text-slate-300 mt-2 space-y-1">
-                  {data.summaryAndNextSteps.rationale.map((r, idx) => (
-                    <li key={idx}>{r}</li>
-                  ))}
-                </ul>
-
-                <h4 className="mt-4 text-sm font-medium text-slate-200">
-                  Actionable Next Steps
-                </h4>
-                <ul className="list-disc list-inside text-sm text-slate-300 mt-2 space-y-1">
-                  {data.summaryAndNextSteps.actionableNextSteps.map(
-                    (a, idx) => (
-                      <li key={idx}>{a}</li>
-                    )
-                  )}
-                </ul>
-
-                <div className="mt-6 flex items-center gap-3">
-                  {/* Dark mode icon container */}
-                  <div className="p-3 bg-slate-700 rounded-lg">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6 text-indigo-400" // Accent color icon
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4"
-                      />
-                    </svg>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-200">
-                      Recommendation:{" "}
-                      <span className="font-bold text-white">
-                        {data.summaryAndNextSteps.recommendation}
-                      </span>
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {data.summaryAndNextSteps.recommendation === "Yes"
-                        ? "Strong fit"
-                        : data.summaryAndNextSteps.recommendation === "Maybe"
-                        ? "Consider with training"
-                        : "Not recommended"}
-                    </p>
-                  </div>
-                </div>
+                ))}
               </div>
-            </div>
-          </motion.section>
+            </motion.section>
+
+            <motion.section variants={itemVariants} className="glass-card rounded-[2.5rem] border-white/5 p-8 bg-blue-600/5 border-blue-500/20">
+              <div className="flex items-center gap-3 mb-6">
+                <Smile className="h-6 w-6 text-blue-400" />
+                <h3 className="text-xl font-bold text-white tracking-tight">Facial Analytics</h3>
+              </div>
+              <p className="text-slate-300 text-sm leading-relaxed mb-6">
+                {facialAnalytics.emotionSummary || 'Facial metrics not captured for this session.'}
+              </p>
+              <div className="p-4 rounded-2xl bg-black/40 border border-white/5">
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-2">Vision Logs</p>
+                <p className="text-slate-400 text-sm italic">"{facialAnalytics.notes || 'No vision data detected.'}"</p>
+              </div>
+            </motion.section>
+          </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

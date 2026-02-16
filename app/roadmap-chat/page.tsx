@@ -2,203 +2,175 @@
 
 import SpotlightCard from "@/components/ui/soptlight-card";
 import Link from "next/link";
-import React from "react";
-import { useState } from "react";
-import { MapPin, MessageSquare, ArrowRight, Eye } from "lucide-react";
+import React, { useState } from "react";
+import { MapPin, MessageSquare, ArrowRight, Eye, Sparkles, LayoutDashboard, BrainCircuit } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-const page = () => {
+import { motion, AnimatePresence } from "framer-motion";
+
+const ServicesPage = () => {
   const router = useRouter();
   
-const roadmap =  typeof window !== 'undefined' ? window.localStorage.getItem("roadmap") : null;
-
-  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const roadmap = typeof window !== 'undefined' ? window.localStorage.getItem("roadmap") : null;
 
   const cards = [
     {
       id: "interview",
-      title: "Create Interview",
-      description:
-        "Generate AI-powered mock interviews to practice and improve your skills",
-      icon: Eye,
-      gradient: "from-green-500 to-green-700",
-      hoverGradient: "from-green-700 to-green-800",
+      title: "AI Interviews",
+      description: "Engage in hyper-realistic technical and HR mock interviews with real-time video feedback.",
+      icon: BrainCircuit,
+      color: "blue",
       href: "/create-interview",
+      cta: "Start Practicing"
     },
     {
       id: "roadmap",
-      title: "Roadmap",
-      description: "Generate Learning Roadmap for your next Job preparation",
+      title: "Growth Roadmaps",
+      description: "Personalized learning paths tailored to your target role at FAANG or top-tier startups.",
       icon: MapPin,
-      gradient: "from-blue-500 to-cyan-500",
-      hoverGradient: "from-blue-600 to-cyan-600",
+      color: "emerald",
       href: "/roadmap",
+      cta: "Generate Path"
     },
     {
       id: "chat",
-      title: "Chat",
-      description:
-        "Chat with our AI to get Guidance and prepare for your next Interview",
+      title: "Career Assistant",
+      description: "24/7 access to your personal AI mentor for resume reviews and salary negotiation tips.",
       icon: MessageSquare,
-      gradient: "from-purple-500 to-pink-500",
-      hoverGradient: "from-purple-600 to-pink-600",
+      color: "purple",
       href: "/chat",
+      cta: "Chat with Neura"
     },
   ];
 
   return (
-    <main className="min-h-screen bg-transparent flex items-center justify-center p-4">
-      <div className="w-full mt-10 max-w-[80vw]">
+    <main className="relative min-h-screen bg-transparent selection:bg-blue-500/30 overflow-x-hidden">
+      {/* Premium Background Elements */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-5%] right-[-5%] w-[45%] h-[45%] bg-blue-500/5 dark:bg-blue-600/5 blur-[120px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[10%] left-[-5%] w-[45%] h-[45%] bg-purple-500/5 dark:bg-purple-600/5 blur-[120px] rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
+      </div>
+
+      <div className="relative z-10 flex flex-col items-center px-6 py-32 md:py-48">
         {/* Header */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 text-balance">
-            Explore Our Services
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="text-center mb-24 max-w-3xl"
+        >
+          {/* <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-widest mb-6">
+            <Sparkles className="h-3 w-3" />
+            <span>Elevate Your Professional Value</span>
+          </div> */}
+          <h1 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tighter">
+            Our <span className="text-gradient">Core Services</span>
           </h1>
-          <p className="text-slate-400 text-lg text-balance">
-            Choose an option to get started
+          <p className="text-slate-400 text-lg md:text-xl leading-relaxed">
+            Every tool you need to transition from "Applying" to "Hired." 
+            Engineered with next-generation AI to guarantee professional growth.
           </p>
-        </div>
+        </motion.div>
 
         {/* Cards Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-          {cards.map((card) => {
-            const Icon = card.icon;
-            const isHovered = hoveredCard === card.id;
-
-            return (
-              <div
-                key={card.id}
-                onMouseEnter={() => setHoveredCard(card.id)}
-                onMouseLeave={() => setHoveredCard(null)}
-                className="group relative cursor-pointer"
-                onClick={() => {
-                  card.id == "chat" || card.id == "interview"
-                    ? router.push(card.href)
-                    : "";
-                }}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl w-full">
+          {cards.map((card, i) => (
+            <motion.div
+              key={card.id}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 * i, duration: 0.6 }}
+              whileHover={{ y: -8 }}
+              className="group h-full"
+            >
+              <SpotlightCard 
+                className="h-full !bg-slate-900/40 !border-white/5 !rounded-[3rem] p-10 backdrop-blur-3xl flex flex-col relative overflow-hidden group/card transition-all hover:!bg-slate-900/60"
+                spotlightColor={
+                  card.color === 'blue' ? 'rgba(59, 130, 246, 0.15)' : 
+                  card.color === 'emerald' ? 'rgba(16, 185, 129, 0.15)' : 
+                  'rgba(168, 85, 247, 0.15)'
+                }
               >
-                <div
-                  className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl -z-10 ${
-                    isHovered ? `bg-gradient-to-r ${card.hoverGradient}` : ""
-                  }`}
-                />
-
-                {/* Card Container */}
-                <div
-                  className={`relative h-full bg-slate-800/50 backdrop-blur-md border border-slate-700/50 rounded-2xl p-8 transition-all duration-300 overflow-hidden
-                    ${
-                      isHovered
-                        ? "border-slate-500 shadow-2xl transform scale-105"
-                        : "hover:border-slate-600"
-                    }
-                  `}
-                >
-                  {/* Animated background gradient */}
-                  <div
-                    className={`absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-300 bg-gradient-to-r ${card.gradient}`}
-                  />
-
-                  {/* Content */}
-                  <div className="relative z-10 flex flex-col h-full">
-                    {/* Icon Container */}
-                    <div
-                      className={`inline-flex w-fit mb-6 p-3 rounded-lg bg-gradient-to-r ${
-                        card.gradient
-                      } 
-                        transform transition-all duration-300
-                        ${isHovered ? "scale-110 shadow-lg" : "scale-100"}
-                      `}
-                    >
-                      <Icon className="w-6 h-6 text-white" />
-                    </div>
-
-                    {/* Title */}
-                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 text-balance">
-                      {card.title}
-                    </h2>
-
-                    {/* Description */}
-                    <p className="text-slate-400 mb-6 flex-grow text-balance">
-                      {card.description}
-                    </p>
-
-                    {/* CTA with Arrow */}
-                    <div
-                      className={`inline-flex items-center gap-2 text-sm font-semibold transition-all duration-300 group/cta
-                        ${
-                          isHovered
-                            ? "text-white translate-x-0"
-                            : "text-slate-300 -translate-x-1"
-                        }
-                      `}
-                    >
-                      {card.id == "chat" ? (
-                        <span>Learn More</span>
-                      ) : card.id == "roadmap" ? (
-                        <div className="flex gap-2 ">
-                          {roadmap ? (
-                            <Button
-                              className=" cursor-pointer"
-                              onClick={() => router.push("/roadmap")}
-                            >
-                              View Previous
-                            </Button>
-                          ) : (
-                            ""
-                          )}
-                          <Button
-                            className=" cursor-pointer"
-                            onClick={() => {
-                              window.localStorage.removeItem("roadmap");
-                              router.push("/roadmap");
-                            }}
-                          >
-                            Generate New
-                          </Button>
-                        </div>
-                      ) : (
-                        <>
-                          <span>Get Started</span>
-                          <ArrowRight
-                            className={`w-4 h-4 transition-transform duration-300 group-hover/cta:translate-x-2`}
-                          />
-                        </>
-                      )}
-
-                      {card.id == "chat" ? (
-                        <ArrowRight
-                          className={`w-4 h-4 transition-transform duration-300 group-hover/cta:translate-x-2`}
-                        />
-                      ) : (
-                        ""
-                      )}
-                    </div>
+                {/* Visual Accent */}
+                <div className={`absolute top-0 right-0 w-32 h-32 bg-${card.color}-500/10 blur-3xl rounded-full opacity-0 group-hover/card:opacity-100 transition-opacity`} />
+                
+                <div className="relative z-10 flex flex-col h-full">
+                  {/* Icon */}
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-10 bg-${card.color}-500/10 text-${card.color}-400 group-hover/card:scale-110 transition-transform shadow-inner`}>
+                    <card.icon className="w-7 h-7" />
                   </div>
 
-                  {/* Hover border accent */}
-                  <div
-                    className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${
-                      card.gradient
-                    } 
-                      transform transition-all duration-300 origin-left
-                      ${isHovered ? "scale-x-100" : "scale-x-0"}
-                    `}
-                  />
+                  <h2 className="text-3xl font-extrabold text-white mb-6 tracking-tight">
+                    {card.title}
+                  </h2>
+
+                  <p className="text-slate-400 text-lg leading-relaxed mb-10 flex-grow">
+                    {card.description}
+                  </p>
+
+                  <div className="mt-auto pt-6 border-t border-white/5">
+                    {card.id === "roadmap" ? (
+                      <div className="flex flex-col gap-3">
+                        {roadmap && (
+                          <Button 
+                            variant="outline"
+                            className="w-full h-12 rounded-2xl border-white/10 hover:bg-white/5 font-bold"
+                            onClick={() => router.push("/roadmap")}
+                          >
+                            View Recent Path
+                          </Button>
+                        )}
+                        <Button 
+                          className={`w-full h-12 rounded-2xl bg-white text-black hover:bg-slate-100 font-bold shadow-xl`}
+                          onClick={() => {
+                            window.localStorage.removeItem("roadmap");
+                            router.push("/roadmap");
+                          }}
+                        >
+                          Generate New Path
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button 
+                        asChild
+                        className={`w-full h-14 rounded-[1.5rem] bg-white text-black hover:bg-slate-100 font-bold group/btn shadow-2xl shadow-black/20`}
+                      >
+                        <Link href={card.href} className="flex items-center justify-center gap-2">
+                          {card.cta}
+                          <ArrowRight className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              </SpotlightCard>
+            </motion.div>
+          ))}
         </div>
 
-        {/* Footer text */}
-        <div className="text-center mt-12">
-          <p className="text-slate-500 text-sm">
-            Hover over the cards to see more details
-          </p>
-        </div>
+        {/* Bottom Feature Bar */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          className="mt-32 w-full max-w-5xl glass-card rounded-[2.5rem] p-8 md:p-12 text-center"
+        >
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { icon: Sparkles, text: "FAANG Aligned" },
+              { icon: LayoutDashboard, text: "Progress Sync" },
+              { icon: MessageSquare, text: "24/7 Coaching" },
+              { icon: Eye, text: "Real-time Vision" }
+            ].map((f, i) => (
+              <div key={i} className="flex flex-col items-center gap-3">
+                <f.icon className="h-6 w-6 text-slate-500" />
+                <span className="text-xs font-bold uppercase tracking-widest text-slate-500">{f.text}</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
       </div>
     </main>
   );
 };
 
-export default page;
+export default ServicesPage;

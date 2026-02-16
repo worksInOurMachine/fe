@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
+import { Sparkles } from "lucide-react"
 
 export default function Hero() {
-  const fullText = "The fastest and most powerful platform for mastering interviews with AI" // Updated to match OpenAI style
+  const fullText = "The most powerful platform for mastering interviews"
   const [typed, setTyped] = useState("")
 
   useEffect(() => {
@@ -13,31 +14,40 @@ export default function Hero() {
       i++
       setTyped(fullText.slice(0, i))
       if (i >= fullText.length) clearInterval(id)
-    }, 35) // Slightly slower typing for readability
+    }, 40)
     return () => clearInterval(id)
   }, [])
 
   return (
-    <div className="relative overflow-hidden text-center">
-      {" "}
-      {/* Removed gradient background for clean look */}
-      <motion.h1
-        className="text-balance text-4xl font-bold tracking-tight md:text-6xl lg:text-7xl" // Larger, more impactful sizing
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
+    <div className="relative text-center max-w-4xl mx-auto">
+      {/* <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium mb-8"
       >
-        {typed}
-        <span className="ml-0.5 inline-block w-[1ch] animate-pulse">|</span>
+        <Sparkles className="h-4 w-4" />
+        <span>Powered by Next-Gen AI Models</span>
+      </motion.div> */}
+      
+      <motion.h1
+        className="text-balance text-5xl font-extrabold tracking-tight md:text-7xl lg:text-8xl mb-8 leading-[1.1] min-h-[1.2em]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <span className="text-white">{typed}</span>
+        <span className="text-blue-500 animate-pulse">|</span>
       </motion.h1>
+
       <motion.p
-        className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl lg:text-2xl" // Larger subtitle text
-        initial={{ opacity: 0, y: 24 }}
+        className="mx-auto max-w-2xl text-lg text-slate-400 md:text-xl lg:text-2xl leading-relaxed"
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.8 }}
       >
-        Practice transformative interview experiences powered by industry-leading AI models and tools.{" "}
-        {/* Updated copy to match OpenAI style */}
+        Practice transformative interview experiences powered by industry-leading AI models. 
+        Get real-time feedback on your confidence, tone, and technical skills.
       </motion.p>
     </div>
   )

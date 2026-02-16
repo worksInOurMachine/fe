@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { motion } from "framer-motion";
 import ThemeToggle from "./theme-toggle";
 
 const Navbar = () => {
@@ -24,46 +25,49 @@ const Navbar = () => {
   return (
     <nav
       aria-label="Main navigation"
-      className="fixed left-1/2 top-4 z-50 w-full max-w-5xl -translate-x-1/2 px-4 font-sans"
+      className="fixed left-1/2 top-6 z-50 w-full max-w-5xl -translate-x-1/2 px-4 font-sans"
     >
       <div
-        className="flex items-center justify-between rounded-2xl border border-white/10 
-        bg-gradient-to-r from-gray-900/60 via-gray-800/40 to-gray-900/60 
-        dark:from-gray-900/80 dark:via-gray-800/60 dark:to-gray-900/80
-        shadow-2xl backdrop-blur-2xl px-4 py-3 transition-all duration-500"
+        className="flex items-center justify-between rounded-[2rem] border border-white/10 
+        bg-white/5 dark:bg-slate-900/20 shadow-2xl backdrop-blur-2xl px-6 py-4 transition-all duration-500"
       >
         {/* --- Logo --- */}
         <Link
           href="/"
-          className="flex items-center gap-2 text-white dark:text-white hover:opacity-90 transition-opacity z-50"
+          className="flex items-center gap-2 text-white dark:text-white hover:opacity-90 transition-opacity z-50 group"
         >
-          <div className="flex items-center gap-1 animate-pulse">
-            <div className="w-2 h-2 rounded-full bg-white"></div>
-            <div className="w-2 h-2 rounded-full bg-white opacity-70"></div>
-            <div className="w-2 h-2 rounded-full bg-white opacity-50"></div>
+          <div className="relative flex items-center justify-center">
+            <div className="absolute inset-0 bg-blue-500/20 blur-lg rounded-full group-hover:scale-150 transition-transform" />
+            <div className="flex items-center gap-1.5 relative z-10">
+              <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+              <div className="w-2 h-2 rounded-full bg-indigo-500 opacity-70"></div>
+            </div>
           </div>
-          <span className="text-lg font-bold tracking-tight bg-white bg-clip-text text-transparent">
-            NeuraView.AI
+          <span className="text-xl font-extrabold tracking-tighter">
+            Neura<span className="text-blue-500 font-black">View</span>
           </span>
         </Link>
 
         {/* --- Desktop Navigation Links --- */}
-        <div className="hidden md:flex items-center gap-6">
+        <div className="hidden md:flex items-center gap-8">
           {navLinks.map(({ href, label }) => {
             const isActive = pathname === href;
             return (
               <Link
                 key={href}
                 href={href}
-                className={`relative text-sm transition-all duration-300 ${
+                className={`relative text-[13px] font-bold uppercase tracking-widest transition-all duration-300 ${
                   isActive
-                    ? "text-white font-semibold"
-                    : "text-gray-300 hover:text-white"
+                    ? "text-blue-400"
+                    : "text-slate-400 hover:text-white"
                 }`}
               >
                 {label}
                 {isActive && (
-                  <span className="absolute bottom-0 left-0 w-full h-[2px] bg-white rounded-full animate-pulse"></span>
+                  <motion.span 
+                    layoutId="nav-underline"
+                    className="absolute -bottom-1 left-0 w-full h-[2px] bg-blue-500 rounded-full"
+                  />
                 )}
               </Link>
             );
@@ -71,42 +75,38 @@ const Navbar = () => {
         </div>
 
         {/* --- Desktop Auth Buttons & Theme Toggle --- */}
-        <div className="hidden md:flex items-center gap-3">
-          {/* <ThemeToggle /> */}
+        <div className="hidden md:flex items-center gap-4">
           {session?.user?.id ? (
             <>
               <Link
                 href="/create-interview"
-                className="rounded-lg px-4 py-2 text-xs font-semibold 
-                text-white bg-gradient-to-r from-green-600 to-emerald-500 
-                hover:from-green-500 hover:to-emerald-400 transition-all shadow-lg shadow-green-600/20 
-                hover:shadow-green-400/40 duration-300"
+                className="rounded-xl px-5 py-2.5 text-xs font-bold uppercase tracking-tighter
+                text-white bg-blue-600 hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 
+                hover:shadow-blue-500/40 transform hover:scale-[1.02] active:scale-95"
               >
-                Start Interview
+                Start Practice
               </Link>
 
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
-                className="rounded-lg border border-white/20 px-4 py-2 text-xs 
-                font-semibold text-gray-300 hover:bg-white/10 hover:text-white transition-all"
+                className="text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-red-400 transition-all"
               >
-                Log Out
+                Sign Out
               </button>
             </>
           ) : (
             <>
               <Link
                 href="/auth/login"
-                className="rounded-lg border border-white/20 px-4 py-2 text-xs font-semibold text-gray-300 hover:bg-white/10 hover:text-white transition-all"
+                className="text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-all"
               >
                 Login
               </Link>
               <Link
                 href="/auth/register"
-                className="rounded-lg bg-gradient-to-r from-green-500 to-emerald-400 
-                text-xs font-semibold text-black px-4 py-2 shadow-md hover:opacity-90 transition-all"
+                className="rounded-xl bg-white text-black text-xs font-bold uppercase tracking-widest px-6 py-2.5 shadow-xl hover:bg-slate-100 transition-all transform hover:scale-[1.02] active:scale-95"
               >
-                Sign Up
+                Join Now
               </Link>
             </>
           )}
