@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     // Prepare streaming request to pollinations.ai
     // https://text.pollinations.ai/openai
 
-    const API_URI = "https://text.pollinations.ai/openai";
+    const API_URI = "https://gen.pollinations.ai/v1/chat/completions";
 
     // console.log(typeof API_URI)
 
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
         "X-Title": "VOID AI",
       },
       body: JSON.stringify({
-        model: model || "openai",
+        model: 'gemini-search',
         stream: isStream || false,
         messages: [systemtPrompt, ...messages],
       }),
