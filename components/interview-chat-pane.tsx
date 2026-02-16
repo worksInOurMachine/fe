@@ -100,7 +100,7 @@ export default function InterviewChatPane({
                   className="w-1.5 h-1.5 rounded-full bg-blue-400/30"
                 />
               </div>
-              <span className="text-white/40 font-medium tracking-wide">AI is formulating a question</span>
+              <span className="text-white/40 font-medium tracking-wide">Generating response...</span>
             </div>
           </motion.div>
         )}

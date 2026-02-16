@@ -176,7 +176,7 @@ export default function InterviewControls({
               </div>
               <div>
                 {/* <span className="text-sm font-semibold text-blue-400 block tracking-wide">Processing...</span> */}
-                <span className="text-xs text-white/40 block">Synthesizing audio response...</span>
+                <span className="text-xs text-white/40 block">thinking...</span>
               </div>
             </div>
             <div className="text-[10px] font-bold uppercase tracking-widest text-white/20 border border-white/10 px-2 py-1 rounded">Processing</div>

@@ -95,28 +95,68 @@ export default function EmotionAnalyzerPage({ startFn, stopFn }: any) {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Draw flipped video for natural feel
+    const localClamp = (v: number) => Math.max(0, Math.min(1, v));
+    const lm = results.multiFaceLandmarks?.[0];
+    
+    if (!lm) {
+      // Face lost: rapid fluctuation and drop to indicate sensor inaccuracy/loss
+      const currentConf = lastEmotionRef.current.confidence;
+      const fluctuation = (Math.random() - 0.5) * 0.15; // Jitter to show "searching"
+      const targetConf = Math.max(0, currentConf - 0.1) + fluctuation;
+      const finalConf = localClamp(targetConf);
+      
+      setConfidence(Number(finalConf.toFixed(2)));
+      lastEmotionRef.current.confidence = finalConf;
+      return;
+    }
+
+    // Coverage & Alignment Score
+    const centerX = lm[1].x;
+    const centerY = lm[1].y;
+    const distFromCenter = Math.hypot(centerX - 0.5, centerY - 0.5);
+    const alignmentPenalty = Math.max(0, distFromCenter - 0.2) * 2;
+    
+    // Check if face is pushing frame boundaries (not "full" in frame)
+    const bounds = lm.reduce((acc: any, p: any) => ({
+        minX: Math.min(acc.minX, p.x), maxX: Math.max(acc.maxX, p.x),
+        minY: Math.min(acc.minY, p.y), maxY: Math.max(acc.maxY, p.y)
+    }), { minX: 1, maxX: 0, minY: 1, maxY: 0 });
+    
+    const boundaryThreshold = 0.05;
+    const isClipped = bounds.minX < boundaryThreshold || bounds.maxX > (1 - boundaryThreshold) ||
+                      bounds.minY < boundaryThreshold || bounds.maxY > (1 - boundaryThreshold);
+    
+    const coverageScore = isClipped ? 0.6 : 1.0;
+
+    // Draw flipped video and mesh for natural feel
     ctx.save();
     ctx.scale(-1, 1);
-    ctx.drawImage(results.image, -canvas.width, 0, canvas.width, canvas.height);
-    ctx.restore();
+    ctx.translate(-canvas.width, 0);
+    ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
 
-    if (!results.multiFaceLandmarks || !results.multiFaceLandmarks[0]) return;
-
-    const lm = results.multiFaceLandmarks[0];
-    
     // Custom styled connectors for a more techy feel
     // @ts-ignore
-    drawConnectors(ctx, lm, FACEMESH_TESSELATION, {
-      color: "rgba(255, 255, 255, 0.15)",
-      lineWidth: 0.5,
-    });
-    // @ts-ignore
-    drawConnectors(ctx, lm, FACEMESH_LEFT_EYE, { color: "rgba(59, 130, 246, 0.6)", lineWidth: 1 });
-    // @ts-ignore
-    drawConnectors(ctx, lm, FACEMESH_RIGHT_EYE, { color: "rgba(59, 130, 246, 0.6)", lineWidth: 1 });
-    // @ts-ignore
-    drawConnectors(ctx, lm, FACEMESH_LIPS, { color: "rgba(255, 255, 255, 0.4)", lineWidth: 1 });
+    if (typeof drawConnectors !== 'undefined') {
+      ctx.shadowBlur = 4;
+      ctx.shadowColor = "#3b82f6";
+      
+      // @ts-ignore
+      drawConnectors(ctx, lm, FACEMESH_TESSELATION, {
+        color: "rgba(255, 255, 255, 0.1)",
+        lineWidth: 0.5,
+      });
+      // @ts-ignore
+      drawConnectors(ctx, lm, FACEMESH_LEFT_EYE, { color: "#3b82f6", lineWidth: 1.5 });
+      // @ts-ignore
+      drawConnectors(ctx, lm, FACEMESH_RIGHT_EYE, { color: "#3b82f6", lineWidth: 1.5 });
+      // @ts-ignore
+      drawConnectors(ctx, lm, FACEMESH_LIPS, { color: "rgba(255, 255, 255, 0.3)", lineWidth: 1.5 });
+      // @ts-ignore
+      drawConnectors(ctx, lm, FACEMESH_FACE_OVAL, { color: "rgba(59, 130, 246, 0.4)", lineWidth: 1 });
+      
+      ctx.shadowBlur = 0;
+    }
+    ctx.restore();
 
     const leftEAR = eyeAspectRatio(lm, [33, 160, 158, 133, 153, 144]);
     const rightEAR = eyeAspectRatio(lm, [263, 387, 385, 362, 380, 373]);
@@ -125,7 +165,7 @@ export default function EmotionAnalyzerPage({ startFn, stopFn }: any) {
     if (earHistoryRef.current.length > 300) earHistoryRef.current.shift();
 
     const prevEar = earHistoryRef.current[earHistoryRef.current.length - 2] || ear;
-    if (prevEar > 0.2 && ear <= 0.2) blinkTimestampsRef.current.push(Date.now());
+    if (prevEar > 0.18 && ear <= 0.18) blinkTimestampsRef.current.push(Date.now());
     const oneMinuteAgo = Date.now() - 60000;
     blinkTimestampsRef.current = blinkTimestampsRef.current.filter((t) => t > oneMinuteAgo);
     const br = blinkTimestampsRef.current.length;
@@ -134,51 +174,43 @@ export default function EmotionAnalyzerPage({ startFn, stopFn }: any) {
     const mar = mouthAspectRatio(lm);
     const smile = smileScore(lm);
     const pose = headPose(lm);
+    const fHeight = euclid(lm[10], lm[152]) || 1;
 
-    const blinkFeature = Math.min(br / 30, 1);
-    const marFeature = Math.min(mar / 0.45, 1);
-    const gazeAversion = Math.min(Math.abs(pose.yaw) / 0.15, 1);
-    const headDown = Math.min(Math.max(pose.pitch / 0.15, -1), 1);
-
-    const earMean = earHistoryRef.current.reduce((a, b) => a + b, 0) / earHistoryRef.current.length;
-    const earStd = Math.sqrt(earHistoryRef.current.reduce((s, x) => s + (x - earMean) ** 2, 0) / earHistoryRef.current.length) || 0.0001;
-    const eyeWideFeature = Math.min(Math.max((ear - earMean) / (2 * earStd), 0), 1);
-    const browDist = euclid(lm[105], lm[159]);
-    const faceHeight = euclid(lm[10], lm[152]) || 1;
-    const browFeature = Math.min(Math.max((browDist / faceHeight - 0.03) / 0.06, 0), 1);
-    const deltaMar = Math.min(Math.max((mar - (lastEmotionRef.current.mar || mar)) * 10, 0), 1);
-    const deltaEar = Math.min(Math.max((ear - (lastEmotionRef.current.ear || ear)) * 10, 0), 1);
-
-    let rawSurprise = 0.4 * marFeature + 0.3 * eyeWideFeature + 0.2 * browFeature + 0.1 * Math.max(deltaMar, deltaEar);
-    rawSurprise *= 1 - smile;
-    const finalSurprise = smooth(lastEmotionRef.current.surprised, rawSurprise);
-    setSurprised(Number(finalSurprise.toFixed(2)));
-
-    const gazeFactor = 1 - gazeAversion;
-    const happyRaw = smooth(lastEmotionRef.current.happy, Math.min(Math.max(0.6 * smile + 0.3 * browFeature + 0.1 * (1 - marFeature), 0), 1) * gazeFactor);
-    setHappy(Number(happyRaw.toFixed(2)));
-
-    const mouthDown = (lm[61].y + lm[291].y) / 2 - lm[0].y;
-    const originalSad = Math.min(Math.max(0.4 * headDown + 0.3 * Math.max(-mouthDown / faceHeight, 0) + 0.2 * (1 - browFeature) + 0.1 * marFeature, 0), 1) * gazeFactor;
-    const sadRaw = smooth(lastEmotionRef.current.sad, 0.5 * (1 - happyRaw) + 0.5 * originalSad);
-    setSad(Number(sadRaw.toFixed(2)));
-
-    const nervousRaw = smooth(lastEmotionRef.current.nervous, Math.min(1, 0.5 * blinkFeature + 0.3 * gazeAversion + 0.2 * marFeature + 0.2 * (1 - happyRaw)));
-    setNervousness(Number(nervousRaw.toFixed(2)));
-
-    const gazeFeature = 1 - gazeAversion;
+    // Presence signal generation
+    const blinkFeature = Math.min(br / 25, 1);
+    const gazeAversion = Math.min(Math.hypot(pose.yaw, pose.pitch) / 0.2, 1);
     const currentNose = lm[1];
     const lastNose = lastEmotionRef.current.nose as any;
-    const stabilityFeature = 1 - Math.min(1, Math.hypot(currentNose.x - (lastNose?.x || currentNose.x), currentNose.y - (lastNose?.y || currentNose.y)) * 50);
-    const gazeStability = Math.min(1, 1 - Math.abs(pose.yaw) * 2) * Math.min(1, 1 - Math.abs(pose.pitch) * 2);
+    const noseMovement = lastNose ? Math.hypot(currentNose.x - lastNose.x, currentNose.y - lastNose.y) / (fHeight * 0.1) : 0;
+    const stabilityFeature = 1 - Math.min(noseMovement * 2, 1);
 
-    const pos = 0.35 * smile + 0.25 * gazeFeature + 0.2 * gazeStability + 0.15 * (1 - headDown) + 0.25 * stabilityFeature;
-    const neg = 0.6 * nervousRaw + 0.15 * (finalSurprise * (1 - smile)) + 0.4 * gazeAversion;
-    const rawConf = Math.max(-1, Math.min(1, pos - neg));
-    const logistic = 1 / (1 + Math.exp(-3 * rawConf));
-    let finalConf = smooth(lastEmotionRef.current.confidence, logistic, 0.2);
+    const earMean = earHistoryRef.current.reduce((a, b) => a + b, 0) / (earHistoryRef.current.length || 1);
+    const earStd = Math.sqrt(earHistoryRef.current.reduce((s, x) => s + (x - earMean) ** 2, 0) / (earHistoryRef.current.length || 1)) || 0.0001;
+    const eyeWideFeature = Math.min(Math.max((ear - earMean) / (2 * earStd), 0), 1);
 
+    const positivity = (0.5 * smile + 0.5 * stabilityFeature) * coverageScore;
+    const negativity = 0.4 * gazeAversion + 0.3 * blinkFeature + alignmentPenalty;
+    
+    // Add jitter "fluctuations" when tracking is inaccurate or face is clipped
+    const jitter = (isClipped || alignmentPenalty > 0.2) ? (Math.random() - 0.5) * 0.08 : 0;
+    
+    const rawConf = localClamp((positivity - negativity + 1) / 2 + jitter);
+    const finalConf = smooth(lastEmotionRef.current.confidence, rawConf, 0.15);
     setConfidence(Number(finalConf.toFixed(2)));
+
+    // Individual emotion refinement
+    const happyRaw = smooth(lastEmotionRef.current.happy, smile, 0.2);
+    setHappy(Number(happyRaw.toFixed(2)));
+
+    const nervousRaw = smooth(lastEmotionRef.current.nervous, (0.4 * gazeAversion + 0.4 * (1 - stabilityFeature) + 0.2 * blinkFeature), 0.1);
+    setNervousness(Number(nervousRaw.toFixed(2)));
+
+    const sadRaw = smooth(lastEmotionRef.current.sad, Math.max(0, 1 - happyRaw - (1 - nervousRaw) * 0.5), 0.1);
+    setSad(Number(sadRaw.toFixed(2)));
+
+    const rawSurprise = Math.min(1, 0.7 * eyeWideFeature + 0.3 * (mar > 0.4 ? 1 : 0));
+    const finalSurprise = smooth(lastEmotionRef.current.surprised, rawSurprise, 0.2);
+    setSurprised(Number(finalSurprise.toFixed(2)));
 
     lastEmotionRef.current = {
       happy: happyRaw,

@@ -7,6 +7,7 @@ export function useChat({
   setAiSpeaking = () => { },
   setIsInterviewCompleted = () => { },
   generateSpeech = () => { }, // TTS function
+  speechEnabled = true, // 🔹 Control TTS
 }: any) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -79,8 +80,8 @@ export function useChat({
             if (jsonStr === "[DONE]") {
               buffer = "";
 
-              // 🔹 Call generateSpeech ONCE after the message is fully received
-              if (aiContent) {
+              // 🔹 Only call generateSpeech if speech is enabled
+              if (aiContent && speechEnabled) {
                 generateSpeech(aiContent);
               }
 
@@ -128,7 +129,7 @@ export function useChat({
         setAiSpeaking(false);
       }
     },
-    [messages, generateSpeech]
+    [messages, generateSpeech, speechEnabled]
   );
 
   return {
