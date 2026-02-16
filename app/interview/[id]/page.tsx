@@ -12,7 +12,10 @@ import { useMurfTTS } from "./useMurfTTS";
 import toast from "react-hot-toast";
 import { strapi } from "@/lib/api/sdk";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mic, Settings, X, ChevronRight } from "lucide-react";
+import Orb from "@/components/Orb";
+import LightRays from "@/components/LightRay";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Message = { role: "assistant" | "user"; content: string };
 
@@ -27,7 +30,7 @@ export default function InterviewPage({ params }: { params: { id: string } }) {
   const [startAnalyticts, setStartAnalyticts] = useState<any>(null);
   const [stopAnalyticts, setStopAnalyticts] = useState<any>(null);
 
-  const [showStartModal, setShowStartModal] = useState(true); // show modal initially
+  const [showStartModal, setShowStartModal] = useState(true);
 
   const router = useRouter();
 
@@ -66,7 +69,6 @@ export default function InterviewPage({ params }: { params: { id: string } }) {
   };
   const resumeUrl = interviewData?.[0]?.resume || "";
 
-  // Initial greeting
   const initialGreetings = async () => {
     try {
       const content = [
@@ -97,128 +99,230 @@ export default function InterviewPage({ params }: { params: { id: string } }) {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center flex-col gap-8 items-center w-full h-[80vh]">
-        <div>Loading interview...</div>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
+        <Orb hue={200} hoverIntensity={0.5} forceHoverState />
+        <div className="mt-8 text-xl font-medium animate-pulse">
+          Initializing AI Interviewer...
+        </div>
       </div>
     );
   }
 
+  const isActuallySpeaking = isSpeechLoading || isPlaying || aiSpeaking;
+
   return (
-    <main className="grid  min-h-[80vh] grid-rows-[auto_1fr] relative">
-      {/* Start Modal */}
-      {showStartModal && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center backdrop-blur-2xl text-white">
-          <h1 className="text-4xl font-bold animate-pulse mb-4">
-            Start Interview
-          </h1>
-          <Button onClick={startInterview} className="px-6 py-3">
-            Click to Start
-          </Button>
-        </div>
-      )}
+    <main className="relative min-h-screen bg-[#050505] text-white overflow-hidden font-sans">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 z-0">
+        <LightRays
+          raysColor="#4a90e2"
+          raysSpeed={0.5}
+          lightSpread={0.8}
+          rayLength={1.5}
+          className="opacity-20"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#050505]/50 to-[#050505]" />
+      </div>
 
-      <div className="h-10" aria-hidden />
+      <AnimatePresence>
+        {showStartModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[100] flex flex-col items-center justify-center backdrop-blur-3xl bg-black/60 p-6 text-center"
+          >
+            <div className="w-full max-w-md p-8 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md shadow-2xl">
+              <div className="mb-6 w-20 h-20 mx-auto">
+                <Orb hue={260} hoverIntensity={1} forceHoverState />
+              </div>
+              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-2">
+                Ready for your interview?
+              </h1>
+              <p className="text-white/60 mb-8">
+                Make sure your camera and microphone are working properly before we begin.
+              </p>
+              <Button
+                onClick={startInterview}
+                className="w-full py-6 text-lg font-semibold rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-xl shadow-blue-500/20 transition-all active:scale-95"
+              >
+                Launch Interview
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <header className="border-b">
-        <div className="container mx-auto flex items-center justify-between px-4 py-3">
-          <h1 className="text-lg font-semibold">Interview Session</h1>
-          <div className="text-sm text-muted-foreground">ID: {params.id}</div>
-        </div>
-      </header>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-15">
-        {/* Left: Full-height user video */}
-        <section className="order-2 md:order-1 md:col-span-8">
-          <Card className="m-4 h-[calc(100vh-120px)] overflow-hidden p-0 md:m-6">
-            <VideoPreview
-              startFn={setStartAnalyticts}
-              stopFn={setStopAnalyticts}
-            />
-          </Card>
-        </section>
-
-        {/* Right: AI text panel and controls */}
-        <aside className="order-1 md:order-2 md:col-span-7">
-          <div className="m-4 flex h-[calc(100vh-120px)] flex-col gap-4 md:m-6">
-            <Card className="flex-1 overflow-hidden">
-              <InterviewChatPane
-                messages={messages}
-                isSpeechLoading={isSpeechLoading || aiSpeaking}
-                setMessages={setMessages}
-              />
-            </Card>
-            <Card className="p-4 flex items-center justify-center">
-              {!isInterviewCompleted ? (
-                <InterviewControls
-                  aiSpeaking={isSpeechLoading || isPlaying || aiSpeaking}
-                  mode={mode}
-                  listening={listening}
-                  text={text}
-                  // setAiSpeaking={setAiSpeaking}
-                  setMode={setMode}
-                  setListening={setListening}
-                  setText={setText}
-                  handleSend={async (c) => {
-                    await sendMessage({ content: c, interviewDetails });
-                    setIsSpeechLoading(true);
-                    setText("");
-                  }}
-                />
-              ) : (
-                <Button
-                  onClick={async () => {
-                    setIsGeneratingReport(true);
-                    try {
-                      let feed = "";
-                      if (stopAnalyticts) {
-                        feed = stopAnalyticts();
-                      }
-                      await strapi.update("interviews", params.id, {
-                        conversation: messages,
-                      });
-                      const res = await fetch("/api/interview/report", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          messages,
-                          interviewDetails,
-                          faceMeshFeedback: feed,
-                        }),
-                      });
-                      if (!res.ok) throw new Error("Failed to generate report");
-
-                      const report = await res.json();
-                      // const report = data?.report;
-                      if (report) {
-                        await strapi.update("interviews", params.id, {
-                          report: JSON.stringify(report),
-                        });
-                      }
-                      toast.success("Report generated!");
-                      router.push("/reports");
-                    } catch (err) {
-                      console.error(err);
-                      toast.error("Could not generate report");
-                    } finally {
-                      setIsGeneratingReport(false);
-                    }
-                  }}
-                  disabled={isGeneratingReport}
-                  className="w-full flex items-center justify-center gap-2"
-                >
-                  {isGeneratingReport ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Generating Report...
-                    </>
-                  ) : (
-                    "Generate Interview Report"
-                  )}
-                </Button>
-              )}
-            </Card>
+      <div className="relative z-10 flex flex-col h-screen max-w-[1600px] mx-auto p-4 md:p-6 lg:p-8">
+        {/* Header */}
+        <header className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <Mic className="text-white w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">Interview Session</h1>
+              <div className="text-[10px] text-white/40 uppercase tracking-widest font-medium">Session ID: {params.id.slice(0, 8)}...</div>
+            </div>
           </div>
-        </aside>
+
+          <div className="flex items-center gap-4">
+            <button className="p-2 rounded-lg hover:bg-white/5 transition-colors" onClick={() => router.push('/dashboard')}>
+              <X className="w-5 h-5 text-white/60" />
+            </button>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
+          {/* Left Column: User Presence */}
+          <div className="lg:col-span-4 flex flex-col gap-6 min-h-0">
+            {/* User Camera Preview */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="relative aspect-video lg:aspect-square flex-shrink-0 rounded-[2rem] overflow-hidden border border-white/10 bg-white/5 shadow-2xl group"
+            >
+              <VideoPreview
+                startFn={setStartAnalyticts}
+                stopFn={setStopAnalyticts}
+              />
+              <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="text-xs font-medium text-white/80">You are on camera</p>
+              </div>
+            </motion.div>
+
+            {/* AI Status / Orb Presence */}
+            {/* <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="flex rounded-[2rem] border border-white/10 bg-white/5 backdrop-blur-xl p-8 flex   items-center justify-center relative overflow-hidden"
+            > */}
+              {/* <div className={`w-48 h-48 transition-all duration-1000 ${isActuallySpeaking ? 'scale-110' : 'scale-100 opacity-60'}`}>
+                <Orb
+                  hue={isActuallySpeaking ? 210 : 260}  
+                  hoverIntensity={isActuallySpeaking ? 0.8 : 0.4}
+                  forceHoverState={isActuallySpeaking}
+                />
+              </div> */}  
+              {/* <div className="mt-3 text-center">
+                <h3 className="text-lg font-semibold text-white/90">
+                  {isActuallySpeaking ? 'AI is speaking...' : 'Give your answer'}
+                </h3>
+                <p className="text-sm text-white/40 mt-1 max-w-[240px]">
+                  {isActuallySpeaking
+                    ? "Carefully listen to the prompt and think about your response."
+                    : "Speak clearly or type your answer when you're ready."}
+                </p>
+              </div> */}
+
+              {/* Decorative light effect behind orb */}
+              {/* <div className={`absolute inset-0 -z-10 bg-blue-500/10 blur-[100px] transition-opacity duration-1000 ${isActuallySpeaking ? 'opacity-100' : 'opacity-0'}`} />
+            </motion.div> */}
+          </div>
+
+          {/* Right Column: Interaction Hub */}
+          <div className="lg:col-span-8 flex flex-col gap-6 min-h-0">
+            {/* Chat History */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className="flex-1 rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-xl overflow-hidden shadow-2xl flex flex-col"
+            >
+              <div className="p-6 border-b border-white/10 bg-white/[0.02] flex items-center justify-between">
+                <span className="text-xs font-semibold tracking-widest text-white/40 uppercase">Conversation Feed</span>
+                <div className="flex gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-hidden">
+                <InterviewChatPane
+                  messages={messages}
+                  isSpeechLoading={isSpeechLoading || aiSpeaking}
+                  setMessages={setMessages}
+                />
+              </div>
+
+              {/* Controls Footer */}
+              <div className="p-6 bg-white/[0.02] border-t border-white/10">
+                {!isInterviewCompleted ? (
+                  <InterviewControls
+                    aiSpeaking={isActuallySpeaking}
+                    mode={mode}
+                    listening={listening}
+                    text={text}
+                    setMode={setMode}
+                    setListening={setListening}
+                    setText={setText}
+                    handleSend={async (c) => {
+                      await sendMessage({ content: c, interviewDetails });
+                      setIsSpeechLoading(true);
+                      setText("");
+                    }}
+                  />
+                ) : (
+                  <Button
+                    onClick={async () => {
+                      setIsGeneratingReport(true);
+                      try {
+                        let feed = "";
+                        if (stopAnalyticts) {
+                          feed = stopAnalyticts();
+                        }
+                        await strapi.update("interviews", params.id, {
+                          conversation: messages,
+                        });
+                        const res = await fetch("/api/interview/report", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            messages,
+                            interviewDetails,
+                            faceMeshFeedback: feed,
+                          }),
+                        });
+                        if (!res.ok) throw new Error("Failed to generate report");
+
+                        const report = await res.json();
+                        if (report) {
+                          await strapi.update("interviews", params.id, {
+                            report: JSON.stringify(report),
+                          });
+                        }
+                        toast.success("Report generated!");
+                        router.push("/reports");
+                      } catch (err) {
+                        console.error(err);
+                        toast.error("Could not generate report");
+                      } finally {
+                        setIsGeneratingReport(false);
+                      }
+                    }}
+                    disabled={isGeneratingReport}
+                    className="w-full h-16 text-lg font-bold rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-500/20 group"
+                  >
+                    {isGeneratingReport ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin mr-3" />
+                        Analyzing Interview Data...
+                      </>
+                    ) : (
+                      <>
+                        Complete & Generate Report
+                        <ChevronRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        </div>
       </div>
     </main>
   );

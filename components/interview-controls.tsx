@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import AISpeakingBars from "./ai-speaking-bars";
 import MicVisualizer from "./mic-visualizer";
-import SegmentedToggle from "./segmented-toggle";
 import { Input } from "@/components/ui/input";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { Mic, Send, StopCircle, Type, RotateCcw, AlertCircle } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function InterviewControls({
   aiSpeaking,
@@ -26,7 +27,19 @@ export default function InterviewControls({
   setText: (text: string) => void;
   handleSend: (text: string) => void;
 }) {
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Use refs to access current state in event handlers without re-registering them
+  const listeningRef = useRef(listening);
+  const aiSpeakingRef = useRef(aiSpeaking);
+  const textRef = useRef(text);
+
+  useEffect(() => {
+    listeningRef.current = listening;
+    aiSpeakingRef.current = aiSpeaking;
+    textRef.current = text;
+  }, [listening, aiSpeaking, text]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -35,129 +48,308 @@ export default function InterviewControls({
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
 
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) {
+      setError("Speech recognition is not supported in this browser.");
+      return;
+    }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.interimResults = true;
-    recognition.continuous = true;
+    if (!recognitionRef.current) {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.interimResults = true;
+      recognition.continuous = true;
 
-    recognition.onresult = (event: any) => {
-      let transcript = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
+      recognition.onresult = (event: any) => {
+        let finalTranscript = "";
+        let interimTranscript = "";
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+
+        if (finalTranscript || interimTranscript) {
+          setText((finalTranscript + interimTranscript).trim());
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error:", event.error);
+        if (event.error === 'not-allowed') {
+          setError("Microphone access denied.");
+        } else if (event.error === 'network') {
+          setError("Network error.");
+        } else if (event.error !== 'aborted') {
+          setError(`Error: ${event.error}`);
+        }
+        
+        // Don't auto-stop on simple errors like 'no-speech' unless it's critical
+        if (['not-allowed', 'service-not-allowed', 'language-not-supported'].includes(event.error)) {
+          setListening(false);
+        }
+      };
+
+      recognition.onend = () => {
+        // Only restart if we are still supposed to be listening and NOT speaking
+        if (listeningRef.current && !aiSpeakingRef.current) {
+          try {
+            recognition.start();
+          } catch (e) {
+            // Probably already started or starting
+          }
+        }
+      };
+
+      recognitionRef.current = recognition;
+    }
+
+    return () => {
+      // Cleanup: stop recognition when component unmounts
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
       }
-      setText(transcript);
     };
+  }, []); // Run only once
 
-    recognition.onerror = (event: any) => {
-      console.error("Speech recognition error:", event.error);
-      setListening(false);
-    };
-
-    recognitionRef.current = recognition;
-  }, [setText, setListening]);
-
+  // Effect to handle listening state changes
   useEffect(() => {
     const recognition = recognitionRef.current;
     if (!recognition) return;
 
-    listening ? recognition.start() : recognition.stop();
+    if (listening) {
+      setError(null);
+      try {
+        recognition.start();
+      } catch (e) {
+        // Service already started
+      }
+    } else {
+      try {
+        recognition.stop();
+      } catch (e) {
+        // Service already stopped
+      }
+    }
   }, [listening]);
 
+  // Force stop listening when AI starts speaking
   useEffect(() => {
-    if (!aiSpeaking) return;
+    if (aiSpeaking && listening) {
+      setListening(false);
+    }
+  }, [aiSpeaking, listening, setListening]);
+
+  // Reset controls when switching mode
+  useEffect(() => {
     setListening(false);
-  }, [aiSpeaking, setListening]);
+    setText("");
+    setError(null);
+  }, [mode, setListening, setText]);
+
+  const handleReset = () => {
+    setText("");
+    setError(null);
+  };
 
   return (
-    <div className="w-full p-2">
-      {aiSpeaking ? (
-        <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-md bg-muted">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-full bg-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
-              AI is responding...
-            </span>
-          </div>
-          <AISpeakingBars />
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <SegmentedToggle
-            value={mode}
-            onChange={(v) => setMode(v as "voice" | "text")}
-            options={[
-              { label: "Voice", value: "voice" },
-              { label: "Text", value: "text" },
-            ]}
-            className="w-full"
-          />
-
-          {/* Voice */}
-          {mode === "voice" && (
-            <div className="flex flex-col items-center gap-2">
-              <MicVisualizer active={listening} />
-              <motion.div
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-xs text-muted-foreground"
-              >
-                {listening ? "Listening..." : "Tap mic to speak"}
-              </motion.div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setListening((s) => !s)}
-                  className="flex-1 rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground shadow hover:opacity-90"
-                >
-                  {listening ? "Stop" : "Start"} Mic
-                </button>
-                {text && (
-                  <button
-                    onClick={() => {
-                      setListening(false);
-                      handleSend(text.trim());
-                      setText("");
-                    }}
-                    className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-xs font-medium hover:bg-muted"
-                  >
-                    Send
-                  </button>
-                )}
+    <div className="w-full max-w-2xl mx-auto">
+      <AnimatePresence mode="wait">
+        {aiSpeaking ? (
+          <motion.div
+            key="ai-speaking"
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            className="flex items-center justify-between gap-6 px-6 py-4 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-md"
+          >
+            <div className="flex items-center gap-10">
+              <div className="relative">
+                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                  <AISpeakingBars />
+                </div>
+                <div className="absolute -inset-1 bg-blue-500/20 rounded-full blur-sm animate-pulse" />
+              </div>
+              <div>
+                {/* <span className="text-sm font-semibold text-blue-400 block tracking-wide">Processing...</span> */}
+                <span className="text-xs text-white/40 block">Synthesizing audio response...</span>
               </div>
             </div>
-          )}
-
-          {/* Text */}
-          {mode === "text" && (
-            <div className="flex gap-2">
-              <Input
-                placeholder="Type your answer..."
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && text.trim()) {
-                    handleSend(text.trim());
-                    setText("");
-                  }
-                }}
-                className="flex-1 text-sm"
-              />
-              <button
-                onClick={() => {
-                  if (text.trim()) {
-                    handleSend(text.trim());
-                    setText("");
-                  }
-                }}
-                className="rounded-md bg-primary px-2 py-1 text-sm font-semibold text-primary-foreground shadow hover:opacity-90"
+            <div className="text-[10px] font-bold uppercase tracking-widest text-white/20 border border-white/10 px-2 py-1 rounded">Processing</div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="user-controls"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-4"
+          >
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }} 
+                animate={{ opacity: 1, height: 'auto' }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs mb-2"
               >
-                Send
-              </button>
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>{error}</span>
+              </motion.div>
+            )}
+
+            <div className="flex justify-center">
+              <div className="bg-white/5 p-1 rounded-xl border border-white/10">
+                <div className="flex gap-1">
+                  {[
+                    { id: 'voice', icon: Mic, label: 'Voice' },
+                    { id: 'text', icon: Type, label: 'Text' }
+                  ].map((btn) => (
+                    <button
+                      key={btn.id}
+                      onClick={() => setMode(btn.id as any)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                        mode === btn.id 
+                          ? 'bg-white/10 text-white shadow-lg' 
+                          : 'text-white/40 hover:text-white/60 hover:bg-white/[0.02]'
+                      }`}
+                    >
+                      <btn.icon className={`w-3.5 h-3.5 ${mode === btn.id ? 'text-blue-400' : ''}`} />
+                      {btn.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-          )}
-        </div>
-      )}
+
+            <AnimatePresence mode="wait">
+              {mode === "voice" ? (
+                <motion.div
+                  key="voice-mode"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="flex flex-col items-center gap-6"
+                >
+                  <div className="relative group">
+                    <button
+                      onClick={() => setListening((s) => !s)}
+                      className={`relative z-10 w-24 h-24 rounded-full flex items-center justify-center transition-all duration-500 ${
+                        listening 
+                          ? 'bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.4)]' 
+                          : 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border border-white/10'
+                      }`}
+                    >
+                      {listening ? (
+                        <StopCircle className="w-10 h-10 animate-pulse" />
+                      ) : (
+                        <Mic className="w-10 h-10" />
+                      )}
+                    </button>
+                    {listening && (
+                      <div className="absolute inset-0 rounded-full bg-red-500/20 animate-ping" />
+                    )}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -z-10">
+                       <MicVisualizer active={listening} />
+                    </div>
+                  </div>
+
+                  <div className="text-center space-y-4 w-full">
+                    <p className={`text-sm font-medium transition-colors ${listening ? 'text-red-400' : 'text-white/40'}`}>
+                      {listening ? "Go ahead, I'm listening..." : "Ready when you are"}
+                    </p>
+                    {text && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="max-w-md mx-auto"
+                      >
+                        <div className="relative group">
+                          <p className="text-sm text-white/60 italic px-5 py-3 bg-white/5 rounded-2xl border border-white/10 text-left min-h-[60px]">
+                            "{text}"
+                          </p>
+                          <button
+                            onClick={handleReset}
+                            className="absolute -top-2 -right-2 p-1.5 rounded-full bg-white/10 border border-white/10 text-white/40 hover:text-white hover:bg-white/20 transition-all opacity-0 group-hover:opacity-100"
+                            title="Clear transcript"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <div className="flex gap-3 justify-center mt-6">
+                           <button
+                             onClick={handleReset}
+                             className="px-6 py-2.5 rounded-full border border-white/10 text-white/60 text-sm font-semibold hover:bg-white/5 transition-all"
+                           >
+                             Reset
+                           </button>
+                           <button
+                             onClick={() => {
+                               setListening(false);
+                               handleSend(text.trim());
+                               setText("");
+                             }}
+                             className="px-8 py-2.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold shadow-xl shadow-blue-500/20 transition-all active:scale-95"
+                           >
+                             Send Response
+                           </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="text-mode"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="w-full space-y-3"
+                >
+                  <div className="bg-white/5 rounded-2xl border border-white/10 p-2 focus-within:ring-2 focus-within:ring-blue-500/50 transition-all flex gap-2">
+                    <Input
+                      placeholder="Type your answer here..."
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && text.trim()) {
+                          handleSend(text.trim());
+                          setText("");
+                        }
+                      }}
+                      className="flex-1 bg-transparent border-none text-white placeholder:text-white/20 focus-visible:ring-0 px-4 py-6"
+                    />
+                    <div className="flex items-center gap-2 pr-2">
+                      {text && (
+                        <button
+                          onClick={handleReset}
+                          className="p-3 rounded-xl hover:bg-white/5 text-white/20 hover:text-white/60 transition-all"
+                          title="Reset"
+                        >
+                          <RotateCcw className="w-5 h-5" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          if (text.trim()) {
+                            handleSend(text.trim());
+                            setText("");
+                          }
+                        }}
+                        className="p-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition-all active:scale-90 shadow-lg shadow-blue-600/20"
+                      >
+                        <Send className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

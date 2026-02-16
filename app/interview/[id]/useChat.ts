@@ -3,13 +3,13 @@ import toast from "react-hot-toast";
 
 export function useChat({
   messages = [],
-  setMessages = () => {},
-  setAiSpeaking = () => {},
-  setIsInterviewCompleted = () => {},
-  generateSpeech = () => {}, // TTS function
+  setMessages = () => { },
+  setAiSpeaking = () => { },
+  setIsInterviewCompleted = () => { },
+  generateSpeech = () => { }, // TTS function
 }: any) {
   const [isLoading, setIsLoading] = useState(false);
-  
+
 
   const sendMessage = useCallback(
     async ({ content, interviewDetails }: any): Promise<void> => {
