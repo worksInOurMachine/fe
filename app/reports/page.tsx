@@ -56,14 +56,14 @@ export default function ReportsPage() {
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-32 md:py-40">
         <header className="mb-20 text-center">
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-widest mb-6"
           >
             <Sparkles className="h-3.5 w-3.5" />
             <span>Review Your Journey</span>
-          </motion.div>
+          </motion.div> */}
           <h1 className="text-5xl md:text-7xl font-black text-white mb-6 tracking-tighter">
             Interview <span className="text-gradient">Insights</span>
           </h1>
