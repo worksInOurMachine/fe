@@ -30,7 +30,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
+      className={`${GeistSans.variable} ${GeistMono.variable} dark antialiased`}
       suppressHydrationWarning={true}
     >
       <body className="font-sans scroll no-scrollbar relative min-h-screen">
