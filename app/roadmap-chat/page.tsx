@@ -7,9 +7,11 @@ import { useState } from "react";
 import { MapPin, MessageSquare, ArrowRight, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-const roadmap = window.localStorage.getItem("roadmap");
 const page = () => {
   const router = useRouter();
+  
+const roadmap =  typeof window !== 'undefined' ? window.localStorage.getItem("roadmap") : null;
+
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   const cards = [
