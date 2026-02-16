@@ -32,8 +32,8 @@ export default function HomePage() {
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="h-14 px-10 rounded-2xl border-white/20 hover:bg-white/5 font-semibold text-lg backdrop-blur-sm transition-all">
-              <Link href="#features">Explore Features</Link>
+            <Button asChild variant="outline" size="lg" className="h-14 px-10 rounded-2xl border-white/20 hover:bg-white/5 hover:text-white  font-semibold text-lg backdrop-blur-sm transition-all">
+              <Link href="/roadmap-chat">Explore Features</Link>
             </Button>
           </motion.div>
         </section>
