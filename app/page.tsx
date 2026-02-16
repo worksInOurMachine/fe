@@ -187,7 +187,7 @@ export default function HomePage() {
                 Ready to crush your next interview?
               </h2>
               <p className="text-blue-100 text-lg md:text-xl max-w-2xl mx-auto mb-12 font-medium">
-                Join thousands of developers who have used NeuraView to unlock their career potential.
+                Join developers who have used NeuraView to unlock their career potential.
               </p>
               <Button asChild size="lg" className="h-16 px-12 rounded-2xl bg-white text-blue-600 hover:bg-slate-100 font-bold text-xl shadow-2xl transition-all">
                 <Link href="/create-interview">
