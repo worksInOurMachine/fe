@@ -18,7 +18,7 @@ export async function middleware(req: NextRequest) {
   // Check NextAuth token
   const token = await getToken({
     req,
-    secret: process.env.NEXT_PUBLIC_NEXTAUTH_SECRET,
+    secret: process.env.NEXTAUTH_SECRET || 'secret',
   });
   if (!token) {
     // Redirect to your login page
@@ -30,5 +30,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/create-interview/:path*", "/interview/:path*",'/dashboard/:path*','/reports/:path*'],
+  matcher: ["/create-interview/:path*", "/interview/:path*", '/dashboard/:path*', '/reports/:path*'],
 };
