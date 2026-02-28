@@ -34,23 +34,30 @@ export function useChat({
       setIsLoading(true);
       setAiSpeaking(true);
 
+      const currentQuestionIndex = messages.filter((m: any) => m.role === "assistant").length + 1;
+
+      const abortController = new AbortController();
+
       try {
         const response = await fetch("/api/interview", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: abortController.signal,
           body: JSON.stringify({
-            messages: [{ role: userMessage.role, content: userMessage.content }], // Simplified for example, or pass history if needed
+            messages: [
+              ...messages.map(({ role, content }: any) => ({ role, content })),
+              { role: userMessage.role, content: userMessage.content }
+            ],
             stream: true,
-            interviewDetails,
+            interviewDetails: {
+              ...interviewDetails,
+              currentQuestionIndex
+            },
           }),
         });
 
-        // Note: In a real app, you'd want to pass the full history. 
-        // If 'messages' is passed from props, it's better to use a ref for history to avoid sendMessage recreation.
-
         if (!response.ok || !response.body) {
-          toast("Something went wrong...");
-          return;
+          throw new Error(`Upstream error: ${response.status}`);
         }
 
         const reader = response.body.getReader();
@@ -72,10 +79,11 @@ export function useChat({
 
         const updateMessageState = (force = false) => {
           const now = Date.now();
-          if (force || now - lastUpdateTimeRef.current > 150) {
+          if (force || now - lastUpdateTimeRef.current > 100) {
             setMessages((prev: any) => {
+              if (prev.length === 0) return prev;
               const updated = [...prev];
-              const lastIndex = updated.findLastIndex(m => m.role === "assistant");
+              const lastIndex = updated.findLastIndex((m: any) => m.role === "assistant" && m.id === aiMessage.id);
               if (lastIndex !== -1 && updated[lastIndex].content !== aiContentRef.current) {
                 updated[lastIndex] = { ...updated[lastIndex], content: aiContentRef.current };
                 return updated;
@@ -93,7 +101,7 @@ export function useChat({
               queueText(sentenceBuffer.trim());
               flush();
             }
-            updateMessageState(true); // Final force update
+            updateMessageState(true);
             break;
           }
 
@@ -103,7 +111,7 @@ export function useChat({
 
           for (const line of lines) {
             const trimmed = line.trim();
-            if (!trimmed.startsWith("data:")) continue;
+            if (!trimmed || !trimmed.startsWith("data:")) continue;
 
             const jsonStr = trimmed.replace("data:", "").trim();
             if (jsonStr === "[DONE]") {
@@ -119,54 +127,43 @@ export function useChat({
                 aiContentRef.current += contentPiece;
                 sentenceBuffer += contentPiece;
 
-                if (speechEnabled) {
-                  // Split by punctuation or when the buffer gets long enough for natural phrasing
-                  const splitRegex = /(?<=[.!?,\n])/;
-                  const hasPunctuation = splitRegex.test(contentPiece);
-
-                  if (hasPunctuation || sentenceBuffer.length > 60) {
-                    const fragments = sentenceBuffer.split(splitRegex);
-
-                    // If we have at least one complete fragment (sentence or phrase)
-                    if (fragments.length > 1) {
-                      const toQueue = fragments.slice(0, -1).join("").trim();
-                      if (toQueue.length > 1) { // Avoid queuing single punctuation marks
-                        queueText(toQueue);
-                      }
-                      sentenceBuffer = fragments[fragments.length - 1];
-                      updateMessageState(true);
-                    } else if (sentenceBuffer.length > 100) {
-                      // Safety fallback: if no punctuation found for a long time, queue the buffer
-                      const toQueue = sentenceBuffer.trim();
-                      if (toQueue) {
-                        queueText(toQueue);
-                      }
-                      sentenceBuffer = "";
-                      updateMessageState(true);
-                    }
-                  }
-                }
-
-                if (aiContentRef.current.toLowerCase().includes("interview is completed")) {
+                // Robust Completion Check
+                const lowerContent = aiContentRef.current.toLowerCase();
+                if (lowerContent.includes("interview is completed") && lowerContent.includes("generate report")) {
                   setIsInterviewCompleted(true);
                 }
 
-                updateMessageState(); // Throttled state update
+                if (speechEnabled) {
+                  const splitRegex = /(?<=[.!?,\n])/;
+                  if (splitRegex.test(contentPiece) || sentenceBuffer.length > 70) {
+                    const fragments = sentenceBuffer.split(splitRegex);
+                    if (fragments.length > 1) {
+                      const toQueue = fragments.slice(0, -1).join("").trim();
+                      if (toQueue.length > 1) {
+                        queueText(toQueue);
+                        updateMessageState(true);
+                      }
+                      sentenceBuffer = fragments[fragments.length - 1];
+                    }
+                  }
+                }
+                updateMessageState();
               }
             } catch (err) {
-              console.error("❌ Stream parse error:", jsonStr, err);
+              // Ignore partial JSON chunks during stream
             }
           }
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (error.name === 'AbortError') return;
         console.error("Chat error:", error);
-        toast.error("Oops! Something went wrong. Please try again later.");
+        toast.error("Network communication interrupted. Please check your connection.");
       } finally {
         setIsLoading(false);
         setAiSpeaking(false);
       }
     },
-    [queueText, flush, stop, speechEnabled, setMessages, setAiSpeaking, setIsInterviewCompleted]
+    [queueText, flush, stop, speechEnabled, setMessages, setAiSpeaking, setIsInterviewCompleted, messages]
   );
 
   return {
