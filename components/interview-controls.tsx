@@ -38,12 +38,14 @@ const InterviewControls = React.memo(function InterviewControls({
   const listeningRef = useRef(listening);
   const aiSpeakingRef = useRef(aiSpeaking);
   const textRef = useRef(text);
+  const handleSendRef = useRef(handleSend);
 
   useEffect(() => {
     listeningRef.current = listening;
     aiSpeakingRef.current = aiSpeaking;
     textRef.current = text;
-  }, [listening, aiSpeaking, text]);
+    handleSendRef.current = handleSend;
+  }, [listening, aiSpeaking, text, handleSend]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -88,7 +90,7 @@ const InterviewControls = React.memo(function InterviewControls({
             const finalSpeech = textRef.current.trim();
             if (finalSpeech && listeningRef.current && !aiSpeakingRef.current) {
               setListening(false);
-              handleSend(finalSpeech);
+              handleSendRef.current(finalSpeech);
               setText("");
             }
           }, SILENCE_THRESHOLD);

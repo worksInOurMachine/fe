@@ -34,7 +34,10 @@ export function useChat({
       setIsLoading(true);
       setAiSpeaking(true);
 
-      const currentQuestionIndex = messages.filter((m: any) => m.role === "assistant").length + 1;
+      const assistantMessagesCount = messages.filter((m: any) => m.role === "assistant").length;
+      const currentQuestionIndex = assistantMessagesCount + 1;
+
+      console.log(`[useChat] sendMessage - Total Messages: ${messages.length}, Assistant Messages: ${assistantMessagesCount}, Computed Index: ${currentQuestionIndex}`);
 
       const abortController = new AbortController();
 
@@ -129,7 +132,11 @@ export function useChat({
 
                 // Robust Completion Check
                 const lowerContent = aiContentRef.current.toLowerCase();
-                if (lowerContent.includes("interview is completed") && lowerContent.includes("generate report") || lowerContent.includes(" इंटरव्यू पूरा हो गया")) {
+                if (
+                  (lowerContent.includes("interview is completed") && lowerContent.includes("report")) ||
+                  lowerContent.includes("इंटरव्यू पूरा हो गया") ||
+                  (lowerContent.includes("गया है") && lowerContent.includes("रिपोर्ट"))
+                ) {
                   setIsInterviewCompleted(true);
                 }
 
