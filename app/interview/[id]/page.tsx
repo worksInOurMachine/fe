@@ -32,6 +32,7 @@ export default function InterviewPage({ params }: { params: { id: string } }) {
   const [startAnalyticts, setStartAnalyticts] = useState<any>(null);
   const [stopAnalyticts, setStopAnalyticts] = useState<any>(null);
   const [speechEnabled, setSpeechEnabled] = useState(true);
+  const [delayedAiSpeaking, setDelayedAiSpeaking] = useState(false);
 
   const [showStartModal, setShowStartModal] = useState(true);
 
@@ -111,6 +112,19 @@ const content = `Hello I am ${interviewDetails.username} and I am here to interv
     if (startAnalyticts) startAnalyticts();
   }, [unlockPlayback, initialGreetings, startAnalyticts]);
 
+  const isActuallySpeaking = isSpeechLoading || isPlaying || aiSpeaking;
+
+  useEffect(() => {
+    if (isActuallySpeaking) {
+      setDelayedAiSpeaking(true);
+    } else {
+      const timer = setTimeout(() => {
+        setDelayedAiSpeaking(false);
+      }, 500); // 0.5s delay
+      return () => clearTimeout(timer);
+    }
+  }, [isActuallySpeaking]);
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
@@ -121,8 +135,6 @@ const content = `Hello I am ${interviewDetails.username} and I am here to interv
       </div>
     );
   }
-
-  const isActuallySpeaking = isSpeechLoading || isPlaying || aiSpeaking;
 
   return (
     <main className="relative min-h-screen bg-[#050505] text-white overflow-hidden font-sans">
@@ -248,11 +260,12 @@ const content = `Hello I am ${interviewDetails.username} and I am here to interv
               <div className="p-6 bg-white/[0.02] border-t border-white/10">
                 {!isInterviewCompleted ? (
                   <InterviewControls
-                    aiSpeaking={isActuallySpeaking}
+                    aiSpeaking={delayedAiSpeaking}
                     mode={mode}
                     listening={listening}
                     text={text}
                     setMode={setMode}
+                    interviewLanguage={interviewDetails.interviewLanguage || 'english'}
                     setListening={setListening}
                     setText={setText}
                     handleSend={handleSend}

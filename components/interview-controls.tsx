@@ -7,27 +7,33 @@ import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, Send, StopCircle, Type, RotateCcw, AlertCircle } from "lucide-react";
 
+interface InterviewControlsProps {
+  aiSpeaking: boolean;
+  mode: "voice" | "text";
+  listening: boolean;
+  text: string;
+  interviewLanguage: string;
+  setMode: (mode: "voice" | "text") => void;
+  setListening: (listening: any) => void;
+  setText: (text: string) => void;
+  handleSend: (text: string) => void;
+}
+
 const InterviewControls = React.memo(function InterviewControls({
   aiSpeaking,
   mode,
+  interviewLanguage,
   listening,
   text,
   setMode,
   setListening,
   setText,
   handleSend,
-}: {
-  aiSpeaking: boolean;
-  mode: "voice" | "text";
-  listening: boolean;
-  text: string;
-  setMode: (mode: "voice" | "text") => void;
-  setListening: (listening: boolean | ((prev: boolean) => boolean)) => void;
-  setText: (text: string) => void;
-  handleSend: (text: string) => void;
-}) {
+}: InterviewControlsProps) {
   const recognitionRef = useRef<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const SILENCE_THRESHOLD = 2000; // 2 seconds of silence to trigger send
   
   const listeningRef = useRef(listening);
   const aiSpeakingRef = useRef(aiSpeaking);
@@ -53,15 +59,14 @@ const InterviewControls = React.memo(function InterviewControls({
 
     if (!recognitionRef.current) {
       const recognition = new SpeechRecognition();
-      recognition.lang = "en-US";
+      recognition.lang = interviewLanguage == 'english' ? 'en-US' : 'hi-IN';
       recognition.interimResults = true;
       recognition.continuous = true;
-
       recognition.onresult = (event: any) => {
         let finalTranscript = "";
         let interimTranscript = "";
 
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
+        for (let i = 0; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
             finalTranscript += event.results[i][0].transcript;
           } else {
@@ -70,7 +75,23 @@ const InterviewControls = React.memo(function InterviewControls({
         }
 
         if (finalTranscript || interimTranscript) {
-          setText((finalTranscript + interimTranscript).trim());
+          const currentTranscript = (finalTranscript + interimTranscript).trim();
+          setText(currentTranscript);
+
+          // Clear existing timeout
+          if (silenceTimeoutRef.current) {
+            clearTimeout(silenceTimeoutRef.current);
+          }
+
+          // Set new timeout for silence detection
+          silenceTimeoutRef.current = setTimeout(() => {
+            const finalSpeech = textRef.current.trim();
+            if (finalSpeech && listeningRef.current && !aiSpeakingRef.current) {
+              setListening(false);
+              handleSend(finalSpeech);
+              setText("");
+            }
+          }, SILENCE_THRESHOLD);
         }
       };
 
@@ -106,6 +127,9 @@ const InterviewControls = React.memo(function InterviewControls({
           recognitionRef.current.stop();
         } catch (e) {}
       }
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+      }
     };
   }, [setListening, setText]);
 
@@ -121,6 +145,9 @@ const InterviewControls = React.memo(function InterviewControls({
     } else {
       try {
         recognition.stop();
+        if (silenceTimeoutRef.current) {
+          clearTimeout(silenceTimeoutRef.current);
+        }
       } catch (e) {}
     }
   }, [listening]);
@@ -130,6 +157,15 @@ const InterviewControls = React.memo(function InterviewControls({
       setListening(false);
     }
   }, [aiSpeaking, listening, setListening]);
+
+  // Auto-start mic when AI finishes speaking
+  const wasAiSpeaking = useRef(aiSpeaking);
+  useEffect(() => {
+    if (wasAiSpeaking.current && !aiSpeaking && mode === "voice") {
+      setListening(true);
+    }
+    wasAiSpeaking.current = aiSpeaking;
+  }, [aiSpeaking, mode, setListening]);
 
   useEffect(() => {
     setListening(false);
@@ -272,6 +308,9 @@ const InterviewControls = React.memo(function InterviewControls({
                            </button>
                            <button
                              onClick={() => {
+                               if (silenceTimeoutRef.current) {
+                                 clearTimeout(silenceTimeoutRef.current);
+                               }
                                setListening(false);
                                handleSend(text.trim());
                                setText("");

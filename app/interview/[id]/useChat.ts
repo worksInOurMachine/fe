@@ -129,12 +129,13 @@ export function useChat({
 
                 // Robust Completion Check
                 const lowerContent = aiContentRef.current.toLowerCase();
-                if (lowerContent.includes("interview is completed") && lowerContent.includes("generate report")) {
+                if (lowerContent.includes("interview is completed") && lowerContent.includes("generate report") || lowerContent.includes(" इंटरव्यू पूरा हो गया")) {
                   setIsInterviewCompleted(true);
                 }
 
                 if (speechEnabled) {
-                  const splitRegex = /(?<=[.!?,\n])/;
+                  // const splitRegex = /(?<=[.!?,\n])/;
+                  const splitRegex = /(?<=[.?\n])/;
                   if (splitRegex.test(contentPiece) || sentenceBuffer.length > 70) {
                     const fragments = sentenceBuffer.split(splitRegex);
                     if (fragments.length > 1) {
