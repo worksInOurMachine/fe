@@ -18,7 +18,7 @@ export async function middleware(req: NextRequest) {
   // Check NextAuth token
   const token = await getToken({
     req,
-    secret: process.env.NEXT_PUBLIC_NEXTAUTH_SECRET,
+    secret: process.env.NEXTAUTH_SECRET,
   });
   if (!token) {
     // Redirect to your login page
