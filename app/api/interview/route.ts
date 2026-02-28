@@ -17,6 +17,7 @@ export async function POST(req: Request) {
       topic: jobRole,
       numOfQuestions,
       username,
+      interviewLanguage = 'english',
     } = interviewDetails;
 
     const systemPrompt = `
@@ -50,6 +51,7 @@ Your role is to simulate a real human interviewer—friendly, natural, but struc
 ---
 
 ❓ Questioning Rules:
+-always use ${interviewLanguage} language for conversation
 - Ask one question at a time until all ${numOfQuestions} are complete.
 - Respect Mode strictly:
   - HR → behavioral, situational, motivation, teamwork. No technical.

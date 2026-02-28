@@ -7,9 +7,10 @@ export function useChat({
   setAiSpeaking = () => { },
   setIsInterviewCompleted = () => { },
   generateSpeech = () => { }, // TTS function
-  queueText = (text: string) => { }, // 🔹 New streaming TTS function
-  flush = () => { }, // 🔹 Flush streaming TTS
-  speechEnabled = true, // 🔹 Control TTS
+  queueText = (text: string) => { },
+  flush = () => { },
+  stop = () => { }, // 🔹 Added stop function
+  speechEnabled = true,
 }: any) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -118,15 +119,31 @@ export function useChat({
                 aiContentRef.current += contentPiece;
                 sentenceBuffer += contentPiece;
 
-                if (speechEnabled && /[.!?\n]/.test(contentPiece)) {
-                  const sentences = sentenceBuffer.split(/(?<=[.!?\n])/);
-                  if (sentences.length > 1) {
-                    const toQueue = sentences.slice(0, -1).join("").trim();
-                    if (toQueue) {
-                      queueText(toQueue);
+                if (speechEnabled) {
+                  // Split by punctuation or when the buffer gets long enough for natural phrasing
+                  const splitRegex = /(?<=[.!?,\n])/;
+                  const hasPunctuation = splitRegex.test(contentPiece);
+
+                  if (hasPunctuation || sentenceBuffer.length > 60) {
+                    const fragments = sentenceBuffer.split(splitRegex);
+
+                    // If we have at least one complete fragment (sentence or phrase)
+                    if (fragments.length > 1) {
+                      const toQueue = fragments.slice(0, -1).join("").trim();
+                      if (toQueue.length > 1) { // Avoid queuing single punctuation marks
+                        queueText(toQueue);
+                      }
+                      sentenceBuffer = fragments[fragments.length - 1];
+                      updateMessageState(true);
+                    } else if (sentenceBuffer.length > 100) {
+                      // Safety fallback: if no punctuation found for a long time, queue the buffer
+                      const toQueue = sentenceBuffer.trim();
+                      if (toQueue) {
+                        queueText(toQueue);
+                      }
+                      sentenceBuffer = "";
+                      updateMessageState(true);
                     }
-                    sentenceBuffer = sentences[sentences.length - 1];
-                    updateMessageState(true); // Force update visually on sentence boundary
                   }
                 }
 
@@ -149,7 +166,7 @@ export function useChat({
         setAiSpeaking(false);
       }
     },
-    [queueText, flush, speechEnabled, setMessages, setAiSpeaking, setIsInterviewCompleted]
+    [queueText, flush, stop, speechEnabled, setMessages, setAiSpeaking, setIsInterviewCompleted]
   );
 
   return {

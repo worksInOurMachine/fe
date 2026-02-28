@@ -100,9 +100,9 @@ export function useSarvamStreamingTTS(options?: SarvamTTSOptions) {
                 body: JSON.stringify({
                     text: text,
                     target_language_code: options?.languageCode || "en-IN",
-                    speaker: "ritu",
+                    speaker: "shubh",
                     model: "bulbul:v3",
-                    pace: 1.0,
+                    pace: 1.1,
                     speech_sample_rate: 22050,
                     output_audio_codec: "mp3",
                     enable_preprocessing: true
