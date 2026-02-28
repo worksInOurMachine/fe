@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { Sparkles } from "lucide-react"
 
 export default function Hero() {
-  const fullText = "The most powerful platform for mastering interviews"
+  const fullText = "Master your future with Neuraview AI"
   const [typed, setTyped] = useState("")
 
   useEffect(() => {
@@ -35,8 +35,9 @@ export default function Hero() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
+        aria-label="Neuraview: The most powerful AI-powered platform for mastering interviews"
       >
-        <span className="text-white">{typed}</span>
+        <span className="text-white">{typed || "Neuraview: The most powerful platform for mastering interviews"}</span>
         <span className="text-blue-500 animate-pulse">|</span>
       </motion.h1>
 
