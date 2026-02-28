@@ -19,6 +19,8 @@ export async function POST(req: Request) {
       currentQuestionIndex = 1,
     } = interviewDetails;
 
+    console.log(interviewDetails)
+
     const systemPrompt = `
 You are Neuraview, a Professional AI Interviewer conducting a realistic mock interview. 
 Your goal is to evaluate the candidate across ${numOfQuestions} specific questions while maintaining a human-like, encouraging, and structured environment.
@@ -64,6 +66,7 @@ Candidate: ${username}
 Target Role: ${jobRole}
 Target Skills: ${skills}
 Difficulty: ${difficulty}
+Interview Mode: ${interviewMode}
 Total Questions Expected: ${numOfQuestions}
 Current Question Point: ${currentQuestionIndex}
 `;

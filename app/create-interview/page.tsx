@@ -18,6 +18,7 @@ function Page() {
   const [skills, setSkills] = React.useState("");
   const [topic, setTopic] = React.useState("");
   const [questions, setQuestions] = React.useState("10");
+  const [interviewLanguage, setInterviewLanguage] = React.useState("english");
   const router = useRouter();
   const { data } = useSession<any>();
   const [loading, setLoading] = useState(false);
@@ -60,6 +61,9 @@ function Page() {
       if (!questions) {
         return toast.error("Please select number of questions");
       }
+      if (!interviewLanguage) {
+        return toast.error("Please select interview language");
+      }
 
       const formData = new FormData();
 
@@ -80,6 +84,7 @@ function Page() {
         numberOfQuestions: parseInt(questions),
         user: data && data.user.id,
         candidateName: candidateName || "",
+        interviewLanguage: interviewLanguage,
       });
       console.log("Interview Created:", res);
       toast.success("interview Created SuccessFully");
@@ -165,6 +170,25 @@ function Page() {
                     required
                     className={InputClasses}
                   />
+                </div>
+
+                <div className="mb-6">
+                  <label className={LabelClasses}>
+                    Interview Language
+                  </label>
+                  <select
+                    value={interviewLanguage}
+                    onChange={(e) => setInterviewLanguage(e.target.value)}
+                    required
+                    className={SelectClasses}
+                  >
+                    <option value="english">English</option>
+                    <option value="hindi">Hindi</option>
+                    {/* <option value="telugu">Telugu</option>
+                    <option value="tamil">Tamil</option>
+                    <option value="kannada">Kannada</option>
+                    <option value="malayalam">Malayalam</option> */}
+                  </select>
                 </div>
 
                 <div className="mb-6">

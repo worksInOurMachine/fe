@@ -73,6 +73,7 @@ export default function InterviewPage({ params }: { params: { id: string } }) {
     numOfQuestions: interviewData?.[0]?.numberOfQuestions,
     skills: interviewData?.[0]?.skills || "",
     username: interviewData?.[0]?.candidateName || "",
+    interviewLanguage: interviewData?.[0]?.interviewLanguage || "english",
   }), [interviewData]);
 
   const resumeUrl = useMemo(() => interviewData?.[0]?.resume || "", [interviewData]);
