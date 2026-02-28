@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, memo } from 'react';
 import { Renderer, Program, Mesh, Triangle, Vec3 } from 'ogl';
 
 interface OrbProps {
@@ -10,7 +10,7 @@ interface OrbProps {
   forceHoverState?: boolean;
 }
 
-export default function Orb({
+const Orb = memo(function Orb({
   hue = 0,
   hoverIntensity = 0.2,
   rotateOnHover = true,
@@ -280,4 +280,6 @@ export default function Orb({
   }, [hue, hoverIntensity, rotateOnHover, forceHoverState]);
 
   return <div ref={ctnDom} className="w-full h-full" />;
-}
+});
+
+export default Orb;

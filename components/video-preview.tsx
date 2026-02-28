@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, memo } from "react";
 import Script from "next/script";
 import MetricsPanel from "@/components/MetricsPanel";
 import { motion } from "framer-motion";
@@ -15,7 +15,7 @@ interface EmotionData {
   blink: number;
 }
 
-export default function EmotionAnalyzerPage({ startFn, stopFn }: any) {
+const VideoPreview = memo(function VideoPreview({ startFn, stopFn }: any) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const cameraRef = useRef<any>(null);
@@ -86,7 +86,6 @@ export default function EmotionAnalyzerPage({ startFn, stopFn }: any) {
     if (!canvas || !video) return;
     const ctx = canvas.getContext("2d")!;
     
-    // Maintain aspect ratio while filling container
     const containerWidth = canvas.parentElement?.clientWidth || 640;
     const containerHeight = canvas.parentElement?.clientHeight || 480;
     
@@ -99,9 +98,8 @@ export default function EmotionAnalyzerPage({ startFn, stopFn }: any) {
     const lm = results.multiFaceLandmarks?.[0];
     
     if (!lm) {
-      // Face lost: rapid fluctuation and drop to indicate sensor inaccuracy/loss
       const currentConf = lastEmotionRef.current.confidence;
-      const fluctuation = (Math.random() - 0.5) * 0.15; // Jitter to show "searching"
+      const fluctuation = (Math.random() - 0.5) * 0.15;
       const targetConf = Math.max(0, currentConf - 0.1) + fluctuation;
       const finalConf = localClamp(targetConf);
       
@@ -110,13 +108,11 @@ export default function EmotionAnalyzerPage({ startFn, stopFn }: any) {
       return;
     }
 
-    // Coverage & Alignment Score
     const centerX = lm[1].x;
     const centerY = lm[1].y;
     const distFromCenter = Math.hypot(centerX - 0.5, centerY - 0.5);
     const alignmentPenalty = Math.max(0, distFromCenter - 0.2) * 2;
     
-    // Check if face is pushing frame boundaries (not "full" in frame)
     const bounds = lm.reduce((acc: any, p: any) => ({
         minX: Math.min(acc.minX, p.x), maxX: Math.max(acc.maxX, p.x),
         minY: Math.min(acc.minY, p.y), maxY: Math.max(acc.maxY, p.y)
@@ -128,13 +124,11 @@ export default function EmotionAnalyzerPage({ startFn, stopFn }: any) {
     
     const coverageScore = isClipped ? 0.6 : 1.0;
 
-    // Draw flipped video and mesh for natural feel
     ctx.save();
     ctx.scale(-1, 1);
     ctx.translate(-canvas.width, 0);
     ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
 
-    // Custom styled connectors for a more techy feel
     // @ts-ignore
     if (typeof drawConnectors !== 'undefined') {
       ctx.shadowBlur = 4;
@@ -176,7 +170,6 @@ export default function EmotionAnalyzerPage({ startFn, stopFn }: any) {
     const pose = headPose(lm);
     const fHeight = euclid(lm[10], lm[152]) || 1;
 
-    // Presence signal generation
     const blinkFeature = Math.min(br / 25, 1);
     const gazeAversion = Math.min(Math.hypot(pose.yaw, pose.pitch) / 0.2, 1);
     const currentNose = lm[1];
@@ -190,15 +183,12 @@ export default function EmotionAnalyzerPage({ startFn, stopFn }: any) {
 
     const positivity = (0.5 * smile + 0.5 * stabilityFeature) * coverageScore;
     const negativity = 0.4 * gazeAversion + 0.3 * blinkFeature + alignmentPenalty;
-    
-    // Add jitter "fluctuations" when tracking is inaccurate or face is clipped
     const jitter = (isClipped || alignmentPenalty > 0.2) ? (Math.random() - 0.5) * 0.08 : 0;
     
     const rawConf = localClamp((positivity - negativity + 1) / 2 + jitter);
     const finalConf = smooth(lastEmotionRef.current.confidence, rawConf, 0.15);
     setConfidence(Number(finalConf.toFixed(2)));
 
-    // Individual emotion refinement
     const happyRaw = smooth(lastEmotionRef.current.happy, smile, 0.2);
     setHappy(Number(happyRaw.toFixed(2)));
 
@@ -234,7 +224,6 @@ export default function EmotionAnalyzerPage({ startFn, stopFn }: any) {
       blink: br,
     });
 
-    // Drawing sophisticated status indicator in corner
     ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
     ctx.roundRect(10, 10, 120, 24, 6);
     ctx.fill();
@@ -258,7 +247,6 @@ export default function EmotionAnalyzerPage({ startFn, stopFn }: any) {
     const conf = avg("confidence");
     const nerv = avg("nervous");
     const happ = avg("happy");
-    const sadScore = avg("sad");
 
     feedback.push(conf < 0.8 ? "Maintain eye contact and use open body language to project more confidence." : "Excellent confidence and technical presence displayed.");
     feedback.push(nerv > 0.2 ? "Focus on steady breathing to reduce visible signs of nervousness." : "You maintained a calm and composed demeanor throughout.");
@@ -315,7 +303,6 @@ export default function EmotionAnalyzerPage({ startFn, stopFn }: any) {
 
   return (
     <div className="flex h-full w-full flex-col bg-black relative">
-       {/* Background Glow */}
        <div className="absolute inset-0 bg-blue-500/5 blur-[100px] pointer-events-none" />
        
        <div className="flex-1 relative flex items-center justify-center overflow-hidden">
@@ -346,4 +333,6 @@ export default function EmotionAnalyzerPage({ startFn, stopFn }: any) {
       </div>
     </div>
   );
-}
+});
+
+export default VideoPreview;

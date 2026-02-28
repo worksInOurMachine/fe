@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import AISpeakingBars from "./ai-speaking-bars";
 import MicVisualizer from "./mic-visualizer";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, Send, StopCircle, Type, RotateCcw, AlertCircle } from "lucide-react";
-import toast from "react-hot-toast";
 
-export default function InterviewControls({
+const InterviewControls = React.memo(function InterviewControls({
   aiSpeaking,
   mode,
   listening,
@@ -30,7 +29,6 @@ export default function InterviewControls({
   const recognitionRef = useRef<any>(null);
   const [error, setError] = useState<string | null>(null);
   
-  // Use refs to access current state in event handlers without re-registering them
   const listeningRef = useRef(listening);
   const aiSpeakingRef = useRef(aiSpeaking);
   const textRef = useRef(text);
@@ -86,20 +84,16 @@ export default function InterviewControls({
           setError(`Error: ${event.error}`);
         }
         
-        // Don't auto-stop on simple errors like 'no-speech' unless it's critical
         if (['not-allowed', 'service-not-allowed', 'language-not-supported'].includes(event.error)) {
           setListening(false);
         }
       };
 
       recognition.onend = () => {
-        // Only restart if we are still supposed to be listening and NOT speaking
         if (listeningRef.current && !aiSpeakingRef.current) {
           try {
             recognition.start();
-          } catch (e) {
-            // Probably already started or starting
-          }
+          } catch (e) {}
         }
       };
 
@@ -107,16 +101,14 @@ export default function InterviewControls({
     }
 
     return () => {
-      // Cleanup: stop recognition when component unmounts
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
         } catch (e) {}
       }
     };
-  }, []); // Run only once
+  }, [setListening, setText]);
 
-  // Effect to handle listening state changes
   useEffect(() => {
     const recognition = recognitionRef.current;
     if (!recognition) return;
@@ -125,26 +117,20 @@ export default function InterviewControls({
       setError(null);
       try {
         recognition.start();
-      } catch (e) {
-        // Service already started
-      }
+      } catch (e) {}
     } else {
       try {
         recognition.stop();
-      } catch (e) {
-        // Service already stopped
-      }
+      } catch (e) {}
     }
   }, [listening]);
 
-  // Force stop listening when AI starts speaking
   useEffect(() => {
     if (aiSpeaking && listening) {
       setListening(false);
     }
   }, [aiSpeaking, listening, setListening]);
 
-  // Reset controls when switching mode
   useEffect(() => {
     setListening(false);
     setText("");
@@ -175,7 +161,6 @@ export default function InterviewControls({
                 <div className="absolute -inset-1 bg-blue-500/20 rounded-full blur-sm animate-pulse" />
               </div>
               <div>
-                {/* <span className="text-sm font-semibold text-blue-400 block tracking-wide">Processing...</span> */}
                 <span className="text-xs text-white/40 block">thinking...</span>
               </div>
             </div>
@@ -235,7 +220,7 @@ export default function InterviewControls({
                 >
                   <div className="relative group">
                     <button
-                      onClick={() => setListening((s) => !s)}
+                      onClick={() => setListening((s: any) => !s)}
                       className={`relative z-10 w-24 h-24 rounded-full flex items-center justify-center transition-all duration-500 ${
                         listening 
                           ? 'bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.4)]' 
@@ -352,4 +337,6 @@ export default function InterviewControls({
       </AnimatePresence>
     </div>
   );
-}
+});
+
+export default InterviewControls;

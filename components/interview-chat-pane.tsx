@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function InterviewChatPane({
+const InterviewChatPane = React.memo(function InterviewChatPane({
   messages,
   isSpeechLoading,
-  setMessages,
 }: any) {
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -20,17 +19,10 @@ export default function InterviewChatPane({
   }, [messages, isSpeechLoading]);
 
   // Determine which messages to render
-  const displayedMessages = (() => {
+  const displayedMessages = React.useMemo(() => {
     if (!messages || messages.length === 0) return [];
-    // Hide the last assistant message while speech is loading
-    if (isSpeechLoading) {
-      const last = messages[messages.length - 1];
-      if (last.role === "assistant") {
-        return messages.slice(1, -1); // skip first dummy and last
-      }
-    }
     return messages.slice(1); // skip first dummy if you have it
-  })();
+  }, [messages]);
 
   return (
     <div className="flex h-full flex-col bg-transparent">
@@ -41,7 +33,7 @@ export default function InterviewChatPane({
         <AnimatePresence initial={false}>
           {displayedMessages.map((m: any, i: number) => (
             <motion.div
-              key={i}
+              key={m.id || i}
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
@@ -55,8 +47,8 @@ export default function InterviewChatPane({
                 }`}
               >
                 {Array.isArray(m.content)
-                  ? m.content?.map((cont: any, i: number) => (
-                      <div key={i}>
+                  ? m.content?.map((cont: any, idx: number) => (
+                      <div key={idx}>
                         {cont.type === "image_url" ? (
                           <motion.img
                             initial={{ opacity: 0, scale: 0.9 }}
@@ -123,4 +115,6 @@ export default function InterviewChatPane({
       `}</style>
     </div>
   );
-}
+});
+
+export default InterviewChatPane;

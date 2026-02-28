@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import VideoPreview from "@/components/video-preview";
 import InterviewChatPane from "@/components/interview-chat-pane";
 import InterviewControls from "@/components/interview-controls";
@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useStrapi } from "@/lib/api/useStrapi";
 import { useChat } from "./useChat";
-import { useMurfTTS } from "./useMurfTTS";
+import { useSarvamStreamingTTS } from "./useSarvamStreamingTTS";
 import toast from "react-hot-toast";
 import { strapi } from "@/lib/api/sdk";
 import { useRouter } from "next/navigation";
@@ -38,68 +38,76 @@ export default function InterviewPage({ params }: { params: { id: string } }) {
   const router = useRouter();
 
   const {
-    generateSpeech,
+    queueText,
+    flush,
     stop,
     unlockPlayback,
     isPlaying,
-    setIsLoading: setIsSpeechLoading,
     isLoading: isSpeechLoading,
     error: speechError,
-  } = useMurfTTS({ voiceId: "en-US-natalie" });
+  } = useSarvamStreamingTTS({ languageCode: "en-IN" });
 
   const { sendMessage, isLoading: isChatLoading } = useChat({
     messages,
     setMessages,
     setAiSpeaking,
     setIsInterviewCompleted,
-    generateSpeech,
+    queueText,
+    flush,
     speechEnabled,
   });
 
-  const { data, error, isLoading } = useStrapi("interviews", {
+
+  const { data, isLoading } = useStrapi("interviews", {
     populate: "*",
     filters: { documentId: params.id },
   });
 
-  const interviewData: any = data?.data;
+  const interviewData: any = useMemo(() => data?.data, [data]);
 
-  const interviewDetails = {
+  const interviewDetails = useMemo(() => ({
     topic: interviewData?.[0]?.details || "",
     difficulty: interviewData?.[0]?.difficulty || "medium",
     mode: interviewData?.[0]?.mode || "text",
     numOfQuestions: interviewData?.[0]?.numberOfQuestions,
     skills: interviewData?.[0]?.skills || "",
     username: interviewData?.[0]?.candidateName || "",
-  };
-  const resumeUrl = interviewData?.[0]?.resume || "";
+  }), [interviewData]);
 
-  const initialGreetings = async () => {
+  const resumeUrl = useMemo(() => interviewData?.[0]?.resume || "", [interviewData]);
+
+  const handleSend = useCallback(async (c: string) => {
+    await sendMessage({ content: c, interviewDetails });
+    setText("");
+  }, [sendMessage, interviewDetails, setText]);
+
+  const initialGreetings = useCallback(async () => {
     try {
-      const content = [
-        ...(resumeUrl
-          ? [{ type: "image_url", image_url: { url: resumeUrl } }]
-          : []),
-        {
-          type: "text",
-          text: interviewDetails.username
-            ? "Hello I am " + interviewDetails.username
-            : "",
-        },
-      ];
-
+      // const content = [
+      //   ...(resumeUrl
+      //     ? [{ type: "image_url", image_url: { url: resumeUrl } }]
+      //     : []),
+      //   {
+      //     type: "text",
+      //     text: interviewDetails.username
+      //       ? "Hello I am " + interviewDetails.username
+      //       : "",
+      //   },
+      // ];
+const content = `Hello I am ${interviewDetails.username} and I am here to interview you for the position of ${interviewDetails.topic}`
       await sendMessage({ content, interviewDetails });
     } catch (error) {
       console.log("Initial greeting failed", error);
     }
-  };
+  }, [resumeUrl, interviewDetails, sendMessage]);
 
-  const startInterview = () => {
+  const startInterview = useCallback(() => {
     unlockPlayback();
     initialGreetings();
     setShowStartModal(false);
 
     if (startAnalyticts) startAnalyticts();
-  };
+  }, [unlockPlayback, initialGreetings, startAnalyticts]);
 
   if (isLoading) {
     return (
@@ -245,11 +253,7 @@ export default function InterviewPage({ params }: { params: { id: string } }) {
                     setMode={setMode}
                     setListening={setListening}
                     setText={setText}
-                    handleSend={async (c) => {
-                      await sendMessage({ content: c, interviewDetails });
-                      if(speechEnabled) setIsSpeechLoading(true);
-                      setText("");
-                    }}
+                    handleSend={handleSend}
                   />
                 ) : (
                   <Button

@@ -6,7 +6,7 @@ export async function POST(req: Request) {
       interviewDetails,
     } = await req.json();
 
-    const model = "openai-fast";
+    const model = 'sarvam-m';
 
     console.log("Interview Details:", interviewDetails);
 
@@ -158,12 +158,15 @@ Your role is to simulate a real human interviewer—friendly, natural, but struc
 
 */
 
-    const API_URI = "https://gen.pollinations.ai/v1/chat/completions";
+    // const API_URI = "https://gen.pollinations.ai/v1/chat/completions";
+
+    const API_URI = "https://api.sarvam.ai/v1/chat/completions"
+    const API_KEY = "sk_gq7o64gi_PSgHBegik8dSJUvCVctMkp2W";
 
     const upstreamResponse = await fetch(API_URI, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.AI_API_TOKEN_POLLINATIONS}`,
+        Authorization: `Bearer ${API_KEY || process.env.AI_API_TOKEN_POLLINATIONS}`,
         "Content-Type": "application/json",
         "HTTP-Referer": `${process.env.SITE_BASE_URL}`,
         "X-Title": "VOID AI",
@@ -180,6 +183,8 @@ Your role is to simulate a real human interviewer—friendly, natural, but struc
         ],
       }),
     });
+
+    console.log(messages)
 
     if (!upstreamResponse.ok || !upstreamResponse.body) {
       console.log(upstreamResponse);
