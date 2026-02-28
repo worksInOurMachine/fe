@@ -26,6 +26,7 @@ export default function SignupFormDemo() {
           JSON.parse(localStorage.getItem("redirectRoute")!)! || "/";
         localStorage.removeItem("redirectRoute");
         router.push(redirectRoute);
+        router.refresh();
       } else {
         toast.error("Invalid Email or Password");
       }
