@@ -20,10 +20,14 @@ export async function middleware(req: NextRequest) {
     req,
     secret: process.env.NEXTAUTH_SECRET || 'secret',
   });
-  console.log(token)
+  console.log(token, 'token')
   if (!token) {
     // Redirect to your login page
     return NextResponse.redirect(new URL("/auth/login", req.url));
+  }
+
+  if (token && pathname.startsWith("/auth")) {
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
   // allowed
